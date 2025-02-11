@@ -1,0 +1,30 @@
+```
+└── 📁backend
+    └── 📁config
+        └── database.js
+    └── 📁controllers
+        └── adminController.js
+        └── ticketController.js
+        └── userUploadController.js
+    └── 📁middleware
+        └── adminErrorMiddleware.js
+        └── adminSetupMiddleware.js
+        └── errorMiddleware.js
+        └── setupMiddleware.js
+    └── 📁models
+        └── adminTicketModel.js
+        └── counterModel.js
+        └── ticketModel.js
+        └── userUploadModel.js
+    └── 📁routes
+        └── adminRoutes.js
+        └── ticketRoutes.js
+        └── userUploadRoutes.js
+    └── 📁src
+        └── index.js
+    └── 📁uploads
+    └── .env
+    └── .gitignore
+    └── package-lock.json
+    └── package.json
+```

@@ -1,0 +1,36 @@
+```
+└── 📁frontend
+    └── 📁public
+        └── vite.svg
+    └── 📁src
+        └── App.css
+        └── App.jsx
+        └── 📁assets
+            └── networking_video.mp4
+            └── react.svg
+        └── 📁components
+            └── AdminDashboard.jsx
+            └── AdminLogin.jsx
+            └── AdminRouteGuard.jsx
+            └── LandingPage.jsx
+            └── TicketForm.jsx
+            └── TicketList.jsx
+        └── index.css
+        └── main.jsx
+        └── 📁ticket-form
+            └── index.html
+            └── index.jsx
+    └── .env
+    └── .env.local
+    └── .gitignore
+    └── eslint.config.js
+    └── index.html
+    └── netlify.toml
+    └── package-lock.json
+    └── package.json
+    └── postcss.config.js
+    └── README.md
+    └── tailwind.config.js
+    └── vercel.json
+    └── vite.config.js
+```
