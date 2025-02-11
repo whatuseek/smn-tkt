@@ -109,7 +109,7 @@ const TicketForm = () => {
 
     return (
         <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6">Create Support Ticket</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center shadow-md">Support Ticket</h2>
 
             {/* Timestamp */}
             <div className="mb-6 text-center">
