@@ -21,9 +21,11 @@ const setupMiddleware = (app) => {
         allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
         console.log('Production CORS enabled for:', allowedOrigins); // Log for debugging
     } else {
-        // Development: Allow common local frontend ports
-        allowedOrigins = ['http://localhost:3000', 'http://localhost:5173']; // Add your common dev ports here
-        console.log('Development CORS enabled for ALL origins'); // Log for debugging
+        // Development: Get allowed origins from environment variable (or use defaults)
+        allowedOrigins = process.env.DEV_ALLOWED_ORIGINS
+            ? process.env.DEV_ALLOWED_ORIGINS.split(',')
+            : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5171']; // Default ports
+        console.log('Development CORS enabled for:', allowedOrigins); // Log for debugging
     }
 
     // CORS configuration
