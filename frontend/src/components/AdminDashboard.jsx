@@ -51,8 +51,9 @@ const AdminDashboard = () => {
         formData.append("file", selectedFile);
 
         try {
+            // Replace the hardcoded URL with the environment variable
             const response = await axios.post(
-                "http://localhost:5000/api/user/upload-users",
+                `${import.meta.env.VITE_BACKEND_URL}/api/user/upload-users`, // Use VITE_BACKEND_URL from .env
                 formData,
                 {
                     headers: {
