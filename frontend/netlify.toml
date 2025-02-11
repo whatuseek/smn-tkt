@@ -1,0 +1,8 @@
+[build]
+  base = ""
+  command = "npm run build"
+  publish = "dist-ticket-form"
+  chdir = "/"  # Explicitly set the working directory to the root
+
+[build.environment]
+  VITE_BACKEND_URL = "${VITE_BACKEND_URL}"
