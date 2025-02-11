@@ -21,7 +21,8 @@ export const getIssueTypes = async (req, res) => {
         const issueTypes = await Ticket.distinct("issue_type");
         res.status(200).json(issueTypes);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching issue types" });
+        console.error("Error in getIssueTypes:", error); // Added error logging
+        res.status(500).json({ message: "Error fetching issue types", error: error.message }); // Include error message
     }
 };
 
@@ -43,10 +44,11 @@ export const getAllTickets = async (req, res) => {
 
         res.status(200).json(formattedTickets);
     } catch (error) {
-        console.error('Error fetching tickets:', error);
-        res.status(500).json({ message: "Error fetching tickets" });
+        console.error('Error in getAllTickets:', error); // Added error logging
+        res.status(500).json({ message: "Error fetching tickets", error: error.message }); // Include error message
     }
 };
+
 // Delete a ticket by ID
 export const deleteTicket = async (req, res) => {
     const { id } = req.params;
@@ -57,7 +59,8 @@ export const deleteTicket = async (req, res) => {
         }
         res.json({ message: 'Ticket deleted successfully.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error while deleting the ticket.' });
+        console.error('Error in deleteTicket:', error); // Added error logging
+        res.status(500).json({ message: 'Server error while deleting the ticket.', error: error.message }); // Include error message
     }
 };
 
@@ -79,7 +82,8 @@ export const updateTicketStatus = async (req, res) => {
 
         return res.status(200).json(ticket);
     } catch (error) {
-        return res.status(500).json({ message: 'Error updating ticket status', error: error });
+        console.error('Error in updateTicketStatus:', error); // Added error logging
+        return res.status(500).json({ message: 'Error updating ticket status', error: error.message }); // Include error message
     }
 };
 
@@ -106,6 +110,7 @@ export const updateTicket = async (req, res) => {
         }
         res.status(200).json(updatedTicket);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating ticket', error: error });
+        console.error('Error in updateTicket:', error); // Added error logging
+        res.status(500).json({ message: 'Error updating ticket', error: error.message }); // Include error message
     }
 };
