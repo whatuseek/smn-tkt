@@ -7,8 +7,8 @@ import ticketRoutes from "../routes/ticketRoutes.js";
 import adminRoutes from "../routes/adminRoutes.js";
 import userUploadRoutes from "../routes/userUploadRoutes.js"
 import { notFound, errorHandler } from '../middleware/errorMiddleware.js';
-import cors from 'cors';
-app.use(cors());
+// import cors from 'cors';
+// app.use(cors());
 
 const app = express();
 
