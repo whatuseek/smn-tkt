@@ -18,12 +18,14 @@ const setupMiddleware = (app) => {
 
     if (isProduction) {
         // Production: Get allowed origins from environment variable
-        allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+        allowedOrigins = process.env.ALLOWED_ORIGINS
+            ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+            : [];
         console.log('Production CORS enabled for:', allowedOrigins); // Log for debugging
     } else {
         // Development: Get allowed origins from environment variable (or use defaults)
         allowedOrigins = process.env.DEV_ALLOWED_ORIGINS
-            ? process.env.DEV_ALLOWED_ORIGINS.split(',')
+            ? process.env.DEV_ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
             : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5171']; // Default ports
         console.log('Development CORS enabled for:', allowedOrigins); // Log for debugging
     }
@@ -44,7 +46,7 @@ const setupMiddleware = (app) => {
         },
         credentials: true, // Allow cookies to be sent in cross-origin requests
         allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
-        methods: ['GET', 'POST', 'PUT, DELETE, OPTIONS'], // Include OPTIONS
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Include OPTIONS
         optionsSuccessStatus: 204 // Some legacy browsers choke on 204
     };
 
