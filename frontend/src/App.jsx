@@ -3,7 +3,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import AdminLogin from "./components/AdminLogin";
-import TicketForm from "./components/TicketForm";
+// import TicketForm from "./components/TicketForm";
 import AdminDashboard from "./components/AdminDashboard";
 
 const App = () => {
@@ -17,7 +17,7 @@ const App = () => {
                 <Route path="/admin-login" element={<AdminLogin />} />
 
                 {/* Ticket Form */}
-                <Route path="/ticket-form" element={<TicketForm />} />
+                {/* <Route path="/ticket-form" element={<TicketForm />} /> */}
 
                 {/* Admin Dashboard */}
                 <Route path="/admin-dashboard" element={<AdminDashboard />} />
