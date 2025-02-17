@@ -8,8 +8,8 @@ const adminRouter = express.Router();
 
 // Configure rate limiter: maximum of 100 requests per 15 minutes
 const limiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minutes
-    max: 3, // max 3 requests per windowMs
+    windowMs: 2 * 60 * 1000, // 2 minutes
+    max: 1, // max 1 requests per windowMs
 });
 
 // Apply rate limiter to all routes
