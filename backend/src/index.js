@@ -10,6 +10,10 @@ import pingSelf from "../pingSchedule/pingSchedule.js";
 
 const app = express();
 
+//  Trust proxy setting - ADD THIS LINE
+app.set('trust proxy', 1); //  or true, depending on your setup
+
+
 // Get the port from .env file
 const port = process.env.PORT || 5000;
 
