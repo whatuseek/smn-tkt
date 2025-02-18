@@ -1,5 +1,3 @@
-// tkt/backend/src/index.js
-
 import express from "express";
 import connectDB from "../config/database.js";
 import setupMiddleware from "../middleware/setupMiddleware.js";
@@ -7,8 +5,8 @@ import ticketRoutes from "../routes/ticketRoutes.js";
 import adminRoutes from "../routes/adminRoutes.js";
 import userUploadRoutes from "../routes/userUploadRoutes.js"
 import { notFound, errorHandler } from '../middleware/errorMiddleware.js';
-// import cors from 'cors';
-// app.use(cors());
+import cron from 'node-cron';
+import pingSelf from "./pingSchedule/pingSchedule.js";
 
 const app = express();
 
@@ -25,11 +23,19 @@ setupMiddleware(app);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/user", userUploadRoutes);
+
 // Add this line for root route
 app.get('/', (req, res) => {
     res.send('Hello from Ticket Server!');
 });
 
+// ADD this line for ping heart beat
+app.get('/ping', (req, res) => {
+    res.status(200).send('OK');
+});
+
+// Schedule ping every 15 minutes
+cron.schedule('*/15 * * * *', pingSelf);
 
 // Error handling middleware
 app.use(notFound); // Place 'notFound' middleware before 'errorHandler'
