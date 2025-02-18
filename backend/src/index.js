@@ -6,7 +6,7 @@ import adminRoutes from "../routes/adminRoutes.js";
 import userUploadRoutes from "../routes/userUploadRoutes.js"
 import { notFound, errorHandler } from '../middleware/errorMiddleware.js';
 import cron from 'node-cron';
-import pingSelf from "./pingSchedule/pingSchedule.js";
+import pingSelf from "../pingSchedule/pingSchedule.js";
 
 const app = express();
 
