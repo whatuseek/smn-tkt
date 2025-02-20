@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import moment from 'moment';
@@ -7,10 +7,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import Slide from '@mui/material/Slide';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
 import '../../src/App.css';
 import '../../src/index.css';
 
-const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use default parameters here
+const TicketList = ({ onDataChange = () => { }, darkMode = false }) => {
     const [tickets, setTickets] = useState([]);
     const [issueType, setIssueType] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +28,14 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
     const [editedValues, setEditedValues] = useState({});
     const [expandedAddressId, setExpandedAddressId] = useState(null);
 
-    // Animation variants for smooth transitions
+    // Add undo
+    const [recentlyDeletedTicket, setRecentlyDeletedTicket] = useState(null);
+    const undoTimeoutId = useRef(null);
+
+    // Add Confirmation dialog
+    const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
+    const [ticketToDeleteId, setTicketToDeleteId] = useState(null);
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -31,22 +44,19 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         }
     };
 
-    // Function to validate the ticket data before saving
     const validateTicketData = (data) => {
         const errors = [];
-
         if (!data.issue_type) errors.push('Issue type is required');
         if (!data.mobile_number) errors.push('Mobile number is required');
         if (!data.location) errors.push('Location is required');
-
         return errors;
     };
 
-    // Helper function to display notifications using MUI Snackbar
     const showNotification = (message, type) => {
         setNotification({ message, type });
         setOpen(true);
     };
+
     const handleClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -54,12 +64,9 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         setOpen(false);
     };
 
-
-    // Fetch available issue types from the backend
     const fetchIssueTypes = async () => {
         try {
-            const response = await axios.get(import.meta.env.VITE_BACKEND_URL + '/api/admin/issue-types'); // Updated API call
-
+            const response = await axios.get(import.meta.env.VITE_BACKEND_URL + '/api/admin/issue-types');
             setAvailableIssueTypes(response.data);
         } catch (error) {
             console.error('Error fetching issue types:', error);
@@ -67,13 +74,12 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         }
     };
 
-    // Fetch tickets data from backend based on filters
     const fetchTickets = async () => {
         setIsLoading(true);
         try {
             const url = issueType
-                ? `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets?issue_type=${issueType}`// Updated API call
-                : `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`; // Updated API call
+                ? `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets?issue_type=${issueType}`
+                : `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`;
 
             const response = await axios.get(url);
 
@@ -101,22 +107,71 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
 
     useEffect(() => {
         fetchTickets();
-    }, [issueType])
+    }, [issueType]);
+
+    const confirmDelete = (id) => {
+        setTicketToDeleteId(id);
+        setConfirmDeleteDialogOpen(true);
+    };
 
     // Handler for deleting a ticket
-    const handleDelete = async (id) => {
+    const handleDelete = async () => {
+        setConfirmDeleteDialogOpen(false); // Close the dialog
+        // Find the ticket to delete
+        const deletedTicket = tickets.find(ticket => ticket._id === ticketToDeleteId);
         try {
-            await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${id}`); // Updated API call
-            const updatedTickets = tickets.filter((ticket) => ticket._id !== id);
+            // Optimistically update the UI
+            const updatedTickets = tickets.filter(ticket => ticket._id !== ticketToDeleteId);
             setTickets(updatedTickets);
             showNotification('Ticket deleted successfully.', 'error');
+
+            // Store the deleted ticket for potential undo
+            setRecentlyDeletedTicket(deletedTicket);
+
+            // Set a timeout for undoing the delete
+            undoTimeoutId.current = setTimeout(() => {
+                // If the ticket is still marked as recently deleted after the timeout,
+                // permanently delete it from the database
+                setRecentlyDeletedTicket(null);
+                setTicketToDeleteId(null);
+            }, 5000);
+
+            // Actually delete the ticket on the server
+            await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${ticketToDeleteId}`);
         } catch (error) {
             console.error('Error deleting ticket:', error);
             showNotification('Failed to delete the ticket. Please try again.', 'error');
+            // If there's an error, revert the optimistic update
+            setTickets(prevTickets => {
+                return [...prevTickets, deletedTicket].sort((a, b) => a.createdAt - b.createdAt)
+            });
+        } finally {
+            setTicketToDeleteId(null);
+
         }
     };
 
-    // Handler to enable editing mode for a ticket
+    const handleUndoDelete = () => {
+        if (recentlyDeletedTicket) {
+            //Clear the timeout
+            clearTimeout(undoTimeoutId.current);
+            undoTimeoutId.current = null;
+
+            // Re-add the ticket to the list
+            setTickets(prevTickets => {
+                const updatedTickets = [...prevTickets, recentlyDeletedTicket]
+                return updatedTickets.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            });
+            setRecentlyDeletedTicket(null);
+            showNotification('Ticket deletion undone.', 'success');
+        }
+    };
+
+    const cancelDelete = () => {
+        setConfirmDeleteDialogOpen(false);
+        setTicketToDeleteId(null);
+    };
+
     const handleEdit = (ticket) => {
         setEditingTicket(ticket._id);
         setEditedValues({
@@ -127,17 +182,14 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         });
     };
 
-    // Handler for saving the changes of a edited ticket
     const handleSave = async (ticketId) => {
         try {
-            // Validate the edited data
             const validationErrors = validateTicketData(editedValues);
             if (validationErrors.length > 0) {
                 showNotification(validationErrors.join(', '), 'error');
                 return;
             }
 
-            // Prepare the data to send for updating
             const updateData = {
                 issue_type: editedValues.issue_type,
                 location: editedValues.location,
@@ -146,9 +198,8 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
                 updated_at: new Date()
             };
 
-            // Send a PUT request to update the ticket in database
             const response = await axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${ticketId}`,// Updated API 
+                `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${ticketId}`,
                 updateData,
                 {
                     headers: {
@@ -158,7 +209,6 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
             );
 
             if (response.data) {
-                // Update the local state with the new data
                 const updatedTickets = tickets.map((ticket) => {
                     if (ticket._id === ticketId) {
                         return {
@@ -195,7 +245,6 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         }));
     };
 
-    // Handler to change the status of a ticket
     const handleStatusChange = async (ticketId, newStatus) => {
         try {
             const updatedTickets = tickets.map((ticket) => {
@@ -206,7 +255,7 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
             });
             setTickets(updatedTickets);
 
-            await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${ticketId}/status`,  // Updated API call
+            await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets/${ticketId}/status`,
                 {
                     status: newStatus,
                 });
@@ -217,7 +266,6 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         }
     };
 
-    // Filtering tickets based on search query
     const filteredTickets = tickets.filter(
         (ticket) =>
             ticket.ticket_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -226,15 +274,14 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
             ticket.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             ticket.comments?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    // Get status color for each ticket
+
     const issueTypeColors = {
         'Technical': 'bg-purple-100 text-purple-800',
         'Service': 'bg-blue-100 text-blue-800',
         'Billing': 'bg-green-100 text-green-800',
         'General': 'bg-yellow-100 text-yellow-800',
-        // Add more as needed
     };
-    // Helper function to get the status color based on the issue type
+
     const getStatusColor = (status, issueType) => {
         if (issueTypeColors[issueType]) {
             return issueTypeColors[issueType]
@@ -255,7 +302,6 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
         setExpandedAddressId(expandedAddressId === ticketId ? null : ticketId);
     };
 
-    // Handler for clearing the filters and search
     const handleResetFilters = () => {
         setIssueType('');
         setSearchQuery('');
@@ -276,7 +322,28 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
                     {notification.message}
                 </Alert>
             </Snackbar>
-
+            {/* Confirmation Dialog */}
+            <Dialog
+                open={confirmDeleteDialogOpen}
+                onClose={cancelDelete}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to delete this ticket? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={cancelDelete} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleDelete} color="error" autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
             {/* Search and Filter Section */}
             <motion.div
                 variants={containerVariants}
@@ -319,6 +386,19 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
                 </div>
             </motion.div>
 
+            {/* Undo Delete Button */}
+            {recentlyDeletedTicket && (
+                <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    onClick={handleUndoDelete}
+                >
+                    Undo Delete
+                </motion.button>
+            )}
             {/* Tickets Table */}
             <motion.div
                 variants={containerVariants}
@@ -458,7 +538,7 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false }) => { // Use 
                                                             <FiEdit2 className="w-5 h-5" />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDelete(ticket._id)}
+                                                            onClick={() => confirmDelete(ticket._id)}
                                                             className="p-1 text-red-600 hover:text-red-900"
                                                             title="Delete"
                                                         >
@@ -483,10 +563,5 @@ TicketList.propTypes = {
     onDataChange: PropTypes.func,
     darkMode: PropTypes.bool,
 };
-
-// TicketList.defaultProps = { // REMOVE THIS ENTIRE BLOCK
-//     onDataChange: () => { },
-//     darkMode: false,
-// };
 
 export default TicketList;
