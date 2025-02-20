@@ -6,7 +6,7 @@ import adminRoutes from "../routes/adminRoutes.js";
 import userUploadRoutes from "../routes/userUploadRoutes.js"
 import { notFound, errorHandler } from '../middleware/errorMiddleware.js';
 import cron from 'node-cron';
-import pingSelf from "../pingSchedule/pingSchedule.js";
+// import pingSelf from "../pingSchedule/pingSchedule.js";
 
 const app = express();
 
@@ -34,12 +34,21 @@ app.get('/', (req, res) => {
 });
 
 // ADD this line for ping heart beat
-app.get('/ping', (req, res) => {
-    res.status(200).send('OK');
-});
+// app.get('/ping', (req, res) => {
+//     res.status(200).send('OK');
+// });
 
 // Schedule ping every 15 minutes
-cron.schedule('*/15 * * * *', pingSelf);
+// cron.schedule('*/5 * * * *', pingSelf);
+
+// Add the catch-all route to serve the frontend
+// Note: Assumes your frontend's build output is in a 'frontend/dist' directory
+// app.use(express.static(path.join(__dirname, '../../frontend/dist'))); // Serve static files
+
+// app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, '../../frontend/dist', 'index.html'));
+// });
+
 
 // Error handling middleware
 app.use(notFound); // Place 'notFound' middleware before 'errorHandler'
