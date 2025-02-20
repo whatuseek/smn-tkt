@@ -6,12 +6,11 @@ import { getAllTickets, getIssueTypes, deleteTicket, updateTicket, updateTicketS
 
 const adminRouter = express.Router();
 
-// Configure rate limiter: maximum of 100 requests per 15 minutes
+// Configure rate limiter:  Adjust these values carefully!
 const limiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minutes
-    max: 1, // max 1 requests per windowMs
-    message: "You can only submit one ticket per minute. Please try again later.",
-
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, //  Increased from 100 to 200 requests per windowMs
+    message: "Too many requests from this IP, please try again after 15 minutes" // Optional message
 });
 
 // Apply rate limiter to all routes

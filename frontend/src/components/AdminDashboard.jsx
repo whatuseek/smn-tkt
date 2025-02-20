@@ -1,36 +1,56 @@
-// tkt/frontend/src/components/AdminDashboard.jsx
+// frontend/src/components/AdminDashboard.jsx
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TicketList from "./TicketList";
 import AdminRouteGuard from "./AdminRouteGuard";
+import UserUpload from "./UserUpload";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { FaCheckCircle, FaExclamationCircle, FaTimes, FaUpload, FaBars } from "react-icons/fa"; // Import FaBars for the hamburger icon
-import {MdDarkMode, MdLightMode} from "react-icons/md"
+import { FaCheckCircle, FaExclamationCircle, FaBars } from "react-icons/fa";
+import { MdDarkMode, MdLightMode } from "react-icons/md";
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const [selectedFile, setSelectedFile] = useState(null);
     const [uploadStatus, setUploadStatus] = useState({ message: '', type: '' });
-    const [uploading, setUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [darkMode, setDarkMode] = useState(false);
     const [showTickets, setShowTickets] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false); // State for controlling the menu
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [showUserUpload, setShowUserUpload] = useState(false);
+
+    const [tickets, setTickets] = useState([]);// NEW State to store tickets for summary
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     useEffect(() => {
         if (showTickets) {
             setActiveTab('tickets');
+        } else if (showUserUpload) {
+            setActiveTab('upload');
         } else {
             setActiveTab('dashboard');
         }
-    }, [showTickets]);
+    }, [showTickets, showUserUpload]);
 
     const handleLogout = () => {
         localStorage.removeItem("adminLoggedIn");
         navigate("/");
+    };
+
+    const toggleDarkMode = () => {
+        setDarkMode(!darkMode);
+    };
+
+    const handleTicketsLinkClick = () => {
+        setShowTickets(true);
+        setShowUserUpload(false);
+    }
+
+    const handleUserUploadClick = () => {
+        setShowUserUpload(true);
+        setShowTickets(false);
     };
 
     const handleFileChange = (event) => {
@@ -51,9 +71,8 @@ const AdminDashboard = () => {
         formData.append("file", selectedFile);
 
         try {
-            // Replace the hardcoded URL with the environment variable
             const response = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/api/user/upload-users`, // Use VITE_BACKEND_URL from .env
+                "http://localhost:5000/api/user/upload-users",
                 formData,
                 {
                     headers: {
@@ -86,14 +105,6 @@ const AdminDashboard = () => {
         }
     };
 
-    const toggleDarkMode = () => {
-        setDarkMode(!darkMode);
-    };
-
-    const handleTicketsLinkClick = () => {
-        setShowTickets(true);
-    }
-
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -105,6 +116,36 @@ const AdminDashboard = () => {
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
+    // Function to get status color
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Open':
+                return `bg-yellow-100 text-yellow-800 ${darkMode ? 'dark:bg-yellow-900 dark:text-yellow-100' : ''}`;
+            case 'In Progress':
+                return `bg-blue-100 text-blue-800 ${darkMode ? 'dark:bg-blue-900 dark:text-blue-100' : ''}`;
+            case 'Resolved':
+                return `bg-green-100 text-green-800 ${darkMode ? 'dark:bg-green-900 dark:text-green-100' : ''}`;
+            default:
+                return `bg-gray-100 text-gray-800 ${darkMode ? "dark:bg-gray-700 dark:text-gray-100" : ""}`;
+        }
+    };
+    useEffect(() => {
+        const fetchAllTickets = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`);
+                setTickets(response.data);
+            } catch (error) {
+                console.error("Error fetching tickets:", error);
+            }
+        };
+
+        fetchAllTickets();
+    }, []);
+    // Calculate statistics
+    const totalTickets = tickets.length;
+    const openTickets = tickets.filter(ticket => ticket.status === 'Open').length;
+    const inProgressTickets = tickets.filter(ticket => ticket.status === 'In Progress').length;
+    const resolvedTickets = tickets.filter(ticket => ticket.status === 'Resolved').length;
 
 
     return (
@@ -121,7 +162,7 @@ const AdminDashboard = () => {
                     </div>
                     <nav className={`flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 ${isMenuOpen ? 'block' : 'hidden'} sm:flex`}>
                         <button
-                            onClick={() => {setShowTickets(false); setIsMenuOpen(false);}}
+                            onClick={() => { setShowTickets(false); setShowUserUpload(false); setIsMenuOpen(false); }}
                             className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${
                                 darkMode
                                     ? activeTab === 'dashboard'
@@ -134,7 +175,7 @@ const AdminDashboard = () => {
                         >Dashboard
                         </button>
                         <button
-                            onClick={() => {handleTicketsLinkClick(); setIsMenuOpen(false);}}
+                            onClick={() => { handleTicketsLinkClick(); setIsMenuOpen(false); }}
                             className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${
                                 darkMode
                                     ? activeTab === 'tickets'
@@ -145,6 +186,19 @@ const AdminDashboard = () => {
                                         : 'text-gray-700 hover:bg-gray-200'
                             }`}
                         >Tickets
+                        </button>
+                        <button
+                            onClick={() => { handleUserUploadClick(); setIsMenuOpen(false); }}
+                            className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${
+                                darkMode
+                                    ? activeTab === 'upload'
+                                        ? 'bg-gray-700 text-white'
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                    : activeTab === 'upload'
+                                        ? 'bg-gray-200 text-gray-900'
+                                        : 'text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >User Upload
                         </button>
                         <a href="#" className={`px-3 py-1 sm:px-4 sm:py-2 ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-200"} rounded-lg transition`}>Settings</a>
 
@@ -182,61 +236,54 @@ const AdminDashboard = () => {
 
                 {/* Main Content */}
                 <main className="p-4 sm:p-6 flex-1 overflow-y-auto w-full">
-                    {!showTickets && (
+
+                    {/* Ticket Statistics */}
+                    {!showTickets && !showUserUpload && (
                         <motion.div
                             variants={containerVariants}
                             initial="hidden"
                             animate="visible"
-                            className={`mb-4 sm:mb-6 p-4 sm:p-6 rounded-lg shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                            className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8`}
                         >
-                            <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Upload User Data</h3>
-                            <div className="flex flex-col items-center justify-between">
-                                <div className="w-full mb-4">
-                                    <label htmlFor="file-upload"
-                                        className={`cursor-pointer flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-lg ${darkMode ? "border-gray-600 hover:border-gray-500" : "border-gray-300 hover:border-gray-400"}`}
-                                    >
-                                        <FaUpload className="text-2xl sm:text-3xl mb-2" />
-                                        <span className="text-sm font-medium text-center">
-                                            {selectedFile ? selectedFile.name : "Choose a file or drag it here"}
-                                        </span>
-                                    </label>
-                                    <input
-                                        id="file-upload"
-                                        type="file"
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                    />
-                                    {selectedFile && (
-                                        <div className="flex items-center justify-between mt-2">
-                                            <p className="text-sm font-light">{selectedFile.name}</p>
-                                            <button
-                                                onClick={handleClearFile}
-                                                className="text-red-500 hover:text-red-600"
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={uploading}
-                                    className={`px-4 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed`}
-                                >
-                                    {uploading ? "Uploading..." : "Upload Users"}
-                                </button>
+                            <div className={`rounded-2xl shadow-md p-6 flex flex-col items-start ${darkMode ? "text-white" : "text-gray-700"}`}>
+                                <div className="text-lg font-semibold mb-2">Total Tickets</div>
+                                <div className="text-3xl font-bold">{totalTickets}</div>
                             </div>
-                            {uploading && (
-                                <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-                                    <div
-                                        className="bg-blue-500 h-2.5 rounded-full"
-                                        style={{ width: `${uploadProgress}%` }}
-                                    ></div>
-                                </div>
-                            )}
+                            <div className={`rounded-2xl shadow-md p-6 flex flex-col items-start ${darkMode ? "text-white" : "text-gray-700"} ${getStatusColor('Open')}`}>
+                                <div className="text-lg font-semibold mb-2">Open</div>
+                                <div className="text-3xl font-bold">{openTickets}</div>
+                            </div>
+                            <div className={`rounded-2xl shadow-md p-6 flex flex-col items-start ${darkMode ? "text-white" : "text-gray-700"} ${getStatusColor('In Progress')}`}>
+                                <div className="text-lg font-semibold mb-2">In Progress</div>
+                                <div className="text-3xl font-bold">{inProgressTickets}</div>
+                            </div>
+                            <div className={`rounded-2xl shadow-md p-6 flex flex-col items-start ${darkMode ? "text-white" : "text-gray-700"} ${getStatusColor('Resolved')}`}>
+                                <div className="text-lg font-semibold mb-2">Resolved</div>
+                                <div className="text-3xl font-bold">{resolvedTickets}</div>
+                            </div>
                         </motion.div>
                     )}
-                    {/* Notification */}
+                    {/* User Upload Component */}
+                    {showUserUpload && (
+                        <motion.div
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            className="flex-1 overflow-auto"
+                        >
+                            <UserUpload
+                              darkMode={darkMode}
+                              selectedFile={selectedFile}
+
+                              uploading={uploading}
+                              uploadProgress={uploadProgress}
+                              handleFileChange={handleFileChange}
+                              handleClearFile={handleClearFile}
+                              handleUpload={handleUpload}
+                            />
+                        </motion.div>
+                    )}
+                    {/* Notification, global one, to make it appear in dashboard and userupload and ticket*/}
                     {uploadStatus.message && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
