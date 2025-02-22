@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import TicketList from "./TicketList";
 import AdminRouteGuard from "./AdminRouteGuard";
 import UserUpload from "./UserUpload"; // Import the new component
-import Filters from "./Filters";  // Import the Filters Component
 import axios from "axios";  // Import axios
 import { motion } from "framer-motion";
 import { FaCheckCircle, FaExclamationCircle, FaBars } from "react-icons/fa"; // Import FaBars for the hamburger icon
@@ -21,11 +20,7 @@ const AdminDashboard = () => {
     const [showUserUpload, setShowUserUpload] = useState(false); // New state for UserUpload
 
     const [tickets, setTickets] = useState([]);// NEW State to store tickets for summary
-    //New State Management
-    const [issueType, setIssueType] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [availableIssueTypes, setAvailableIssueTypes] = useState([]);
+    
 
     //new
     const [selectedFile, setSelectedFile] = useState(null);
@@ -138,36 +133,11 @@ const AdminDashboard = () => {
                 return `bg-gray-100 text-gray-800 ${darkMode ? "dark:bg-gray-700 dark:text-gray-100" : ""}`;
         }
     };
-    const fetchIssueTypes = async () => {
-        try {
-            const response = await axios.get(import.meta.env.VITE_BACKEND_URL + '/api/admin/issue-types');
-            setAvailableIssueTypes(response.data);
-        } catch (error) {
-            console.error('Error fetching issue types:', error);
-        }
-    };
+    
 
-    const fetchTickets = async () => {
-        setIsLoading(true);
-        try {
-            const url = issueType
-                ? `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets?issue_type=${issueType}`
-                : `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`;
+    
 
-            const response = await axios.get(url);
-            setTickets(response.data);
-        } catch (error) {
-            console.error('Error fetching tickets:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleResetFilters = () => {
-        setIssueType('');
-        setSearchQuery('');
-        fetchTickets();
-    };
+    
 
     useEffect(() => {
         const fetchAllTickets = async () => {
@@ -180,7 +150,6 @@ const AdminDashboard = () => {
         };
 
         fetchAllTickets();
-        fetchIssueTypes();
     }, []);
     // Calculate statistics
     const totalTickets = tickets.length;
@@ -307,23 +276,13 @@ const AdminDashboard = () => {
                     {/* Ticket List */}
                     {showTickets && (
                         <>
-                            <Filters
-                                darkMode={darkMode}
-                                issueType={issueType}
-                                setIssueType={setIssueType}
-                                searchQuery={searchQuery}
-                                setSearchQuery={setSearchQuery}
-                                availableIssueTypes={availableIssueTypes}
-                                fetchTickets={fetchTickets}
-                                handleResetFilters={handleResetFilters}
-                                isLoading={isLoading}
-                            />
+                            
                             <div className="flex-1 overflow-auto">
                                 <TicketList
                                     darkMode={darkMode}
                                     onDataChange={() => {
                                         // Re-fetch tickets when data changes in TicketList
-                                        fetchTickets();
+                                        // fetchTickets();
                                     }}
 
                                 />
