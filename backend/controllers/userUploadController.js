@@ -114,3 +114,48 @@ const parseExcel = async (filePath) => {
 
     return jsonData;
 }
+
+// Controller function to create a single user manually
+export const createUser = asyncHandler(async (req, res) => {
+    const { user_id, mobile_number } = req.body;
+
+    // Validate the input
+    if (!user_id || !mobile_number) {
+        res.status(400);
+        throw new Error("Please provide User ID and Mobile No.");
+    }
+
+    if (!/^\d{10}$/.test(mobile_number)) {
+        res.status(400);
+        throw new Error("Please enter a valid 10-digit mobile number.");
+    }
+
+    try {
+        // Check if the user already exists
+        const userExists = await User.findOne({ user_id });
+        if (userExists) {
+            res.status(400);
+            throw new Error("User already exists.");
+        }
+
+        // Create the new user
+        const user = await User.create({
+            user_id,
+            mobile_number
+        });
+
+        if (user) {
+            res.status(201).json({
+                success: true,
+                message: "User created successfully!",
+                user: user
+            });
+        } else {
+            res.status(400);
+            throw new Error("Invalid user data.");
+        }
+    } catch (error) {
+        res.status(500);
+        throw new Error(error.message || "Error creating user.");
+    }
+});
