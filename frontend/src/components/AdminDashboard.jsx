@@ -16,7 +16,7 @@ const AdminDashboard = () => {
     const [darkMode, setDarkMode] = useState(false);
     const [showTickets, setShowTickets] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false); // State for controlling the menu
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab] = useState('dashboardHome');
     const [showUserUpload, setShowUserUpload] = useState(false); // New state for UserUpload
 
     const [tickets, setTickets] = useState([]);// NEW State to store tickets for summary
@@ -33,7 +33,7 @@ const AdminDashboard = () => {
         } else if (showUserUpload) {
             setActiveTab('upload');
         } else {
-            setActiveTab('dashboard');
+            setActiveTab('dashboardHome');
         }
     }, [showTickets, showUserUpload]);
 
@@ -175,14 +175,14 @@ const AdminDashboard = () => {
                             onClick={() => { setShowTickets(false); setShowUserUpload(false); setIsMenuOpen(false); }}
                             className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${
                                 darkMode
-                                    ? activeTab === 'dashboard'
+                                    ? activeTab === 'dashboardHome'
                                         ? 'bg-gray-700 text-white'
                                         : 'text-gray-300 hover:bg-gray-700'
-                                    : activeTab === 'dashboard'
+                                    : activeTab === 'dashboardHome'
                                         ? 'bg-gray-200 text-gray-900'
                                         : 'text-gray-700 hover:bg-gray-200'
                             }`}
-                        >Dashboard
+                        >Home
                         </button>
                         <button
                             onClick={() => { handleTicketsLinkClick(); setIsMenuOpen(false); }}
@@ -309,7 +309,7 @@ const AdminDashboard = () => {
                             />
                         </motion.div>
                     )}
-                    {/* Notification, global one, to make it appear in dashboard and userupload and ticket*/}
+                    {/* Notification, global one, to make it appear in dashboardHome and userupload and ticket*/}
                     {uploadStatus.message && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

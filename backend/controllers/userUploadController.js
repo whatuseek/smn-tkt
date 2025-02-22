@@ -1,4 +1,4 @@
-//  tkt/backend/controllers/userUploadController.js
+// tkt/backend/controllers/userUploadController.js
 
 import asyncHandler from 'express-async-handler';
 import User from '../models/userUploadModel.js';
@@ -76,7 +76,14 @@ const parseCSV = (filePath) => {
         const results = [];
         fs.createReadStream(filePath)
             .pipe(csv())
-            .on('data', (data) => results.push(data))
+            .on('data', (data) => {
+                // Map the new headers to the expected keys
+                const mappedData = {
+                    user_id: data['User ID'], // Maps "User ID" column in CSV to user_id
+                    mobile_number: data['Mobile No.'] // Maps "Mobile No." column in CSV to mobile_number
+                };
+                results.push(mappedData);
+            })
             .on('end', () => {
                 resolve(results);
             })
@@ -89,8 +96,21 @@ const parseCSV = (filePath) => {
 const parseExcel = async (filePath) => {
     const workbook = new exceljs.Workbook();
     await workbook.xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = xlsx.utils.sheet_to_json(worksheet);
+    const worksheet = workbook.getWorksheet(1); // Get the first worksheet
+
+    const jsonData = [];
+    worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+            // Skip header row
+            return;
+        }
+
+        const rowData = {
+            user_id: row.getCell(1).value,         // Assuming "User ID" is in the first column
+            mobile_number: row.getCell(2).value?.toString(),  // Assuming "Mobile No." is in the second column, and convert to string
+        };
+        jsonData.push(rowData);
+    });
+
     return jsonData;
 }
