@@ -1,10 +1,11 @@
 // tkt/frontend/src/App.jsx
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import TicketForm from "./components/TicketForm"; // Ensure this path is correct
+import AdminRouteGuard from "./components/AdminRouteGuard";
+
 const App = () => {
     return (
         <Router>
@@ -16,10 +17,10 @@ const App = () => {
                 <Route path="/admin-login" element={<AdminLogin />} />
 
                 {/* Ticket Form - as a Route */}
-                <Route path="/ticket-form" element={<TicketForm />} />
+                <Route path="/TicketForm" element={<AdminRouteGuard><TicketForm /></AdminRouteGuard>} />
 
                 {/* Admin Dashboard */}
-                <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                <Route path="/admin-dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
             </Routes>
         </Router>
     );
