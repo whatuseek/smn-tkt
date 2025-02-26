@@ -4,8 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
-import TicketForm from "../../ticket-form-app/src/components/TicketForm"; // Ensure this path is correct
-
+import TicketForm from "./components/TicketForm"; // Ensure this path is correct
 const App = () => {
     return (
         <Router>
