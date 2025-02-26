@@ -65,7 +65,7 @@ const UserUpload = ({ darkMode, selectedFile, uploading, uploadProgress, handleF
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className={`mb-4 sm:mb-6 p-4 sm:p-6 rounded-lg shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}
+            className={`mb-4 sm:mb-6 p-4 sm:p-6 rounded-lg shadow-lg ${darkMode ? "bg-gray-800 text-white" : "bg-white"}`}
         >
             <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Upload User Data</h3>
 

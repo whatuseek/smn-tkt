@@ -1,5 +1,3 @@
-// tkt/backend/controllers/adminController.js
-
 import Ticket from "../models/ticketModel.js";
 
 // Utility function to format timestamps

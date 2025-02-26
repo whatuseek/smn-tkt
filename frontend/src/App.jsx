@@ -3,8 +3,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import AdminLogin from "./components/AdminLogin";
-// import TicketForm from "./components/TicketForm";
 import AdminDashboard from "./components/AdminDashboard";
+import TicketForm from "../../ticket-form-app/src/components/TicketForm"; // Ensure this path is correct
 
 const App = () => {
     return (
@@ -16,8 +16,8 @@ const App = () => {
                 {/* Admin Login */}
                 <Route path="/admin-login" element={<AdminLogin />} />
 
-                {/* Ticket Form */}
-                {/* <Route path="/ticket-form" element={<TicketForm />} /> */}
+                {/* Ticket Form - as a Route */}
+                <Route path="/ticket-form" element={<TicketForm />} />
 
                 {/* Admin Dashboard */}
                 <Route path="/admin-dashboard" element={<AdminDashboard />} />

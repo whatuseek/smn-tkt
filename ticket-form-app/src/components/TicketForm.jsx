@@ -209,14 +209,14 @@ const TicketForm = () => {
                         {showDropdown && (
                             <ul className="absolute z-10 bg-white border rounded shadow-md w-full mt-2">
                                 {[
-                                    "HARDWARE",
-                                    "SOFTWARE",
-                                    "NETWORK",
+                                    "Speed Issue",
+                                    "Cable Complaint",
+                                    "Recharge Related",
                                     "CONNECTION",
                                     "SPEED",
                                     "INTERMITTENT",
                                     "ROUTER",
-                                    "BILLING",
+                                    "No Internet",
                                     "INSTALLATION",
                                     "WIFI",
                                     "SERVICE_OUTAGE",

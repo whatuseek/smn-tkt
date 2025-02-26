@@ -23,25 +23,25 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold mb-4">Admin Login</h1>
+    <div className="flex flex-col items-center justify-center h-screen shadow-emerald-100 bo">
+      <h1 className="font-raleway text-white text-2xl font-bold mb-4">Admin Login</h1>
       <input
         type="text"
         placeholder="Enter Admin ID"
         value={adminId}
         onChange={(e) => setAdminId(e.target.value)}
-        className="mb-4 px-3 py-2 border rounded w-64"
+        className="font-raleway mb-4 px-3 py-2 border rounded w-64"
       />
       <input
         type="password"
         placeholder="Enter Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="mb-4 px-3 py-2 border rounded w-64"
+        className="font-raleway mb-4 px-3 py-2 border rounded w-64"
       />
       <button
         onClick={handleLogin}
-        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
+        className="font-raleway bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
       >
         Login
       </button>

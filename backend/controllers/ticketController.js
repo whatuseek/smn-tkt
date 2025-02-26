@@ -1,4 +1,4 @@
-//  tkt/backend/controllers/ticketController.js
+// tkt/backend/controllers/ticketController.js
 
 // Import required modules
 import asyncHandler from 'express-async-handler';
@@ -62,16 +62,16 @@ export const createTicket = asyncHandler(async (req, res) => {
   const { user_id, mobile_number, location, issue_type, comments } = req.body;
 
   // Validate the required fields
-  if (!user_id || !mobile_number || !location || !issue_type) {
+  if (!user_id || !location || !issue_type) {
     res.status(400);
     throw new Error('Please provide all required fields');
   }
 
   // Validate user exists or not
-  const user = await User.findOne({ user_id, mobile_number });
+  const user = await User.findOne({ user_id });   // Validate user only on userId
   if (!user) {
     res.status(401);
-    throw new Error("Invalid user ID or mobile number");
+    throw new Error("Invalid user ID");      // Change the error Message
   }
 
 

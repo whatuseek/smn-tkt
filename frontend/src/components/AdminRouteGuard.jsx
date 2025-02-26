@@ -14,10 +14,9 @@ const AdminRouteGuard = ({ children }) => {
         const checkAuth = () => {
             const adminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
             setIsAuthenticated(adminLoggedIn);
-             setIsLoading(false);
-             if (!adminLoggedIn && location.pathname === '/admin-dashboard')
-            {
-                 navigate('/admin-login', { replace: true });
+            setIsLoading(false);
+            if (!adminLoggedIn && location.pathname === '/admin-dashboard') {
+                navigate('/admin-login', { replace: true });
             }
         };
         checkAuth();
@@ -25,9 +24,9 @@ const AdminRouteGuard = ({ children }) => {
     }, []);
 
     if (isLoading) {
-         return <div className="flex justify-center items-center h-screen">Loading...</div>;
+        return <div className="flex justify-center items-center h-screen">Loading...</div>;
     }
-    if(isAuthenticated){
+    if (isAuthenticated) {
         return children;
     } else {
         return null
