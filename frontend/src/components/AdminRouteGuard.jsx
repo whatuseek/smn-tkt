@@ -1,7 +1,5 @@
-//  tkt/frontend/src/components/AdminRouteGuard.jsx
-
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import  { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'; // Import Navigate
 import PropTypes from 'prop-types';
 
 const AdminRouteGuard = ({ children }) => {
@@ -15,7 +13,9 @@ const AdminRouteGuard = ({ children }) => {
             const adminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
             setIsAuthenticated(adminLoggedIn);
             setIsLoading(false);
-            if (!adminLoggedIn && location.pathname === '/admin-dashboard') {
+
+            // Redirect to admin-login if not authenticated on admin routes
+            if (!adminLoggedIn && location.pathname.startsWith('/admin')) {
                 navigate('/admin-login', { replace: true });
             }
         };
@@ -26,11 +26,13 @@ const AdminRouteGuard = ({ children }) => {
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen">Loading...</div>;
     }
-    if (isAuthenticated) {
-        return children;
-    } else {
-        return null
-    }
+
+    // Render children or Navigate component based on authentication status
+    return isAuthenticated ? (
+        children
+    ) : (
+        <Navigate to="/admin-login" replace />
+    );
 };
 
 AdminRouteGuard.propTypes = {
