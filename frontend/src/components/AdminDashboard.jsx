@@ -1,11 +1,11 @@
-import  { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TicketList from "./TicketList";
 import AdminRouteGuard from "./AdminRouteGuard";
 import UserUpload from "./UserUpload";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaExclamationTriangle, FaSpinner, FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff  } from "react-icons/fa";
+import { FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaExclamationTriangle, FaSpinner, FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
 import { MdDarkMode, MdLightMode } from "react-icons/md"
 import PropTypes from 'prop-types';
 import TicketForm from "./TicketForm"; // Ensure the path is correct
@@ -32,7 +32,7 @@ const AdminDashboard = () => {
     const [searchQuery, setSearchQuery] = useState(''); // Search query state
     const [issueType, setIssueType] = useState(''); // Issue type state
     const [availableIssueTypes, setAvailableIssueTypes] = useState([]);
-    
+
 
     useEffect(() => {
         if (showTickets) {
@@ -111,6 +111,8 @@ const AdminDashboard = () => {
             setShowTickets(false);
             setShowUserUpload(false);
             setShowTicketForm(false);
+            setIsMenuOpen(false);  // Add this line
+
         }, 500);
 
         setFilteredStatus(null);
@@ -272,7 +274,7 @@ const AdminDashboard = () => {
         setFilteredStatus(null)
     };
 
-  
+
     return (
         <AdminRouteGuard>
             <div className={`font min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} flex flex-col`}>
@@ -281,19 +283,19 @@ const AdminDashboard = () => {
                     <div className="flex items-center justify-between w-full sm:w-auto">
                         <h1 className="font-raleway text-2xl sm:text-3xl font-bold">Dashboard
                             {/* DB Connection Button and Status */}
-                        <IconButton
-                            onClick={checkDbConnection}
-                            disabled={isCheckingConnection}
-                            className={`p-2 rounded-full ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
-                                } text-white transition-colors`}
-                            title={isDbConnected ? "Database Connected" : "Connect to Database"}
-                            aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
-                        >
-                            <FaPowerOff  className={`${isCheckingConnection ? 'animate-pulse' : ''}`} />
-                        </IconButton>
+                            <IconButton
+                                onClick={checkDbConnection}
+                                disabled={isCheckingConnection}
+                                className={`p-2 rounded-full ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
+                                    } text-white transition-colors`}
+                                title={isDbConnected ? "Database Connected" : "Connect to Database"}
+                                aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
+                            >
+                                <FaPowerOff className={`${isCheckingConnection ? 'animate-pulse' : ''}`} />
+                            </IconButton>
                         </h1>
-                         {/* Database Connection Status */}
-                         {uploadStatus.message && (
+                        {/* Database Connection Status */}
+                        {uploadStatus.message && (
                             <motion.div
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -313,9 +315,9 @@ const AdminDashboard = () => {
                         <button onClick={toggleMenu} className="sm:hidden flex it text-gray-500 hover:text-gray-700 focus:outline-none">
                             <FaBars className="h-6 w-6" />
                         </button>
-                        
+
                     </div>
-                   
+
                     <nav className={`flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 ${isMenuOpen ? 'block' : 'hidden'} sm:flex`}>
                         <button
                             onClick={handleHomeButtonClick}
@@ -414,7 +416,8 @@ const AdminDashboard = () => {
                 </header>
 
                 {/* Search and Filter Section */}
-                           {/* Search and Filter Section */}
+                {/* Search and Filter Section */}
+                {/* Search and Filter Section */}
             <motion.div
                 variants={containerVariants}
                 initial="hidden"
@@ -463,7 +466,7 @@ const AdminDashboard = () => {
                 {/* Main Content */}
                 <main className="p-4 sm:p-6   flex-1 overflow-y-auto w-full pt-10">
 
-                      {/* Ticket Statistics */}
+                    {/* Ticket Statistics */}
                     {!showTickets && !showUserUpload && !showTicketForm && (
                         <motion.div
                             variants={containerVariants}
@@ -551,7 +554,7 @@ const AdminDashboard = () => {
                         </motion.div>
                     )}
                     {/* REMOVE ALL OTHER Notification */}
-                   
+
 
                 </main>
             </div>
