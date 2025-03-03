@@ -87,19 +87,22 @@ export const updateTicketStatus = async (req, res) => {
 
 
 // Controller to update a ticket
+// Controller to update a ticket
 export const updateTicket = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Validate if updatedData is present
-    if (!updateData || Object.keys(updateData).length === 0) {
-        return res.status(400).json({ message: "Request body is missing or empty" })
-    }
+    // Validate if updatedData is present   // REMOVE
+    /*                                          REMOVE
+    if (!updateData || Object.keys(updateData).length === 0) {    REMOVE
+        return res.status(400).json({ message: "Request body is missing or empty" })  REMOVE
+    }   REMOVE
 
-    // Validate if required fields are present
-    if (!updateData.issue_type || !updateData.location || !updateData.mobile_number) {
-        return res.status(400).json({ message: 'Issue type, location, and mobile number are required' });
-    }
+    // Validate if required fields are present   // REMOVE
+    if (!updateData.issue_type || !updateData.location || !updateData.mobile_number) {  REMOVE
+        return res.status(400).json({ message: 'Issue type, location, and mobile number are required' }); // REMOVE
+    }   REMOVE
+    */  // REMOVE
 
     try {
         const updatedTicket = await Ticket.findByIdAndUpdate(id, updateData, { new: true });
