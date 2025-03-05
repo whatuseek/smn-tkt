@@ -87,28 +87,27 @@ export const updateTicketStatus = async (req, res) => {
 
 
 // Controller to update a ticket
-// Controller to update a ticket
+// Example with added logging
 export const updateTicket = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Validate if updatedData is present   // REMOVE
-    /*                                          REMOVE
-    if (!updateData || Object.keys(updateData).length === 0) {    REMOVE
-        return res.status(400).json({ message: "Request body is missing or empty" })  REMOVE
-    }   REMOVE
-
-    // Validate if required fields are present   // REMOVE
-    if (!updateData.issue_type || !updateData.location || !updateData.mobile_number) {  REMOVE
-        return res.status(400).json({ message: 'Issue type, location, and mobile number are required' }); // REMOVE
-    }   REMOVE
-    */  // REMOVE
+    console.log(`Attempting to update ticket with ID: ${id}`); // Log the ticket ID
+    console.log(`Update data:`, updateData); // Log the update data
 
     try {
-        const updatedTicket = await Ticket.findByIdAndUpdate(id, updateData, { new: true });
+        const updatedTicket = await Ticket.findByIdAndUpdate(
+            id, 
+            updateData, 
+            { new: true, runValidators: true });
+
         if (!updatedTicket) {
+            console.log(`Ticket with ID ${id} not found.`); // Log if ticket not found
             return res.status(404).json({ message: 'Ticket not found' });
         }
+
+        console.log(`Ticket with ID ${id} updated successfully:`, updatedTicket); // Log the updated ticket
+
         res.status(200).json(updatedTicket);
     } catch (error) {
         console.error('Error in updateTicket:', error); // Added error logging

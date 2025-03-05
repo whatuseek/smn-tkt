@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TicketList from "./TicketList";
@@ -5,7 +6,7 @@ import AdminRouteGuard from "./AdminRouteGuard";
 import UserUpload from "./UserUpload";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch , FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
+import { FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch, FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
 import { MdDarkMode, MdLightMode } from "react-icons/md"
 import PropTypes from 'prop-types';
 import TicketForm from "./TicketForm";
@@ -183,7 +184,7 @@ const AdminDashboard = () => {
         setIsMenuOpen(!isMenuOpen);
     };
 
-   
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'Total':
@@ -202,11 +203,11 @@ const AdminDashboard = () => {
     const getNumberColor = (status) => {
         switch (status) {
             case 'Open':
-                return `text-blue-800`;
+                return `text-blue-800 ${darkMode ? 'dark:bg-blue-900 dark:text-blue-100' : ''}`;
             case 'In Progress':
-                return `text-orange-800`;
+                return `text-orange-800 ${darkMode ? 'dark:bg-orange-900 dark:text-orange-100' : ''}`;
             case 'Resolved':
-                return `text-green-800`;
+                return `text-green-800 ${darkMode ? 'dark:bg-green-900 dark:text-green-100' : ''}`;
             default:
                 return ``;
         }
@@ -288,14 +289,21 @@ const AdminDashboard = () => {
                         <h1 className="font-raleway text-2xl sm:text-3xl font-bold">Dashboard
                             {/* DB Connection Button and Status */}
                             <IconButton
+                                // onClick={checkDbConnection}
+                                // disabled={isCheckingConnection}
+                                // className={`p-2 rounded-full transition-colors`}
+                                // title={isDbConnected ? "Database Connected" : "Connect to Database"}
+                                // aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
                                 onClick={checkDbConnection}
-                                disabled={isCheckingConnection}
-                                className={`p-2 rounded-full ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
-                                    } text-white transition-colors`}
-                                title={isDbConnected ? "Database Connected" : "Connect to Database"}
-                                aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
+                            disabled={isCheckingConnection}
+                            className={`p-2 rounded-full transition-colors ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
+                                } ${darkMode ? 'text-white' : 'text-gray-700'} transition-colors`}
+                            title={isDbConnected ? "Database Connected" : "Connect to Database"}
+                            aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
                             >
-                                <FaPowerOff className={`${isCheckingConnection ? 'animate-pulse' : ''}`} />
+                                {/* <FaPowerOff className={`${isCheckingConnection ? 'animate-pulse' : ''} ${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`}  /> */}
+                                <FaPowerOff className={`${isCheckingConnection ? 'animate-pulse' : ''} ${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`}  />
+                                <h6 className={`pl-2 ${isCheckingConnection ? '' : ''}${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`}> 👈</h6>
                             </IconButton>
                         </h1>
                         {/* Database Connection Status */}
@@ -315,7 +323,7 @@ const AdminDashboard = () => {
                                 {uploadStatus.message}
                             </motion.div>
                         )}
-                         {uploadStatus.message && uploadStatus.source === 'ticketList' && (
+                        {uploadStatus.message && uploadStatus.source === 'ticketList' && (
                             <motion.div
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -331,7 +339,7 @@ const AdminDashboard = () => {
                                 {uploadStatus.message}
                             </motion.div>
                         )}
-                         {uploadStatus.message && uploadStatus.source === 'userUpload' && (
+                        {uploadStatus.message && uploadStatus.source === 'userUpload' && (
                             <motion.div
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -412,10 +420,10 @@ const AdminDashboard = () => {
                         >
                             <FaTicketAlt className="mr-1" /> Ticket+
                         </button>
-                        <a href="#" title="Settings" // Tooltip
+                        {/* <a href="#" title="Settings" // Tooltip
                             className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-200"} rounded-lg transition`}>
                             <FaCog className="mr-1" /> Settings
-                        </a>
+                        </a> */}
 
                         {/* Dark Mode Toggle Switch */}
                         <div className="flex items-center">
@@ -452,13 +460,11 @@ const AdminDashboard = () => {
                 </header>
 
                 {/* Search and Filter Section */}
-                {/* Search and Filter Section */}
-                {/* Search and Filter Section */}
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className={` sticky top-[60px] font-raleway flex flex-col   items-center justify-between bg-white p-2 rounded-lg shadow-xl ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                    className={` sticky top-[60px] font-raleway flex flex-col   items-center justify-between p-2 rounded-lg shadow-xl ${darkMode ? "bg-gray-800 text-white" : "bg-white"}`}
                 >
                     <div className="w-full mb-1">
                         <input
@@ -466,14 +472,14 @@ const AdminDashboard = () => {
                             placeholder="Search tickets..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="font-raleway w-full px-2 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs"
+                            className={`font-raleway w-full px-2 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs ${darkMode ? 'bg-gray-700 text-white border-gray-600' : ''}`}
                         />
                     </div>
                     <div className="flex items-center space-x-1">
                         <select
                             value={issueType}
                             onChange={(e) => setIssueType(e.target.value)}
-                            className="font-raleway px-2 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
+                            className={`font-raleway px-2 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs ${darkMode ? 'bg-gray-700 text-white border-gray-600' : ''}`}
                         >
                             <option className="font-raleway" value="">All Issues</option>
                             {availableIssueTypes.map((type) => (
@@ -483,16 +489,16 @@ const AdminDashboard = () => {
                         <IconButton
                             onClick={checkDbConnection}
                             disabled={isCheckingConnection}
-                            className={`p-1 rounded-full ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
-                                } text-white transition-colors`}
+                            className={`p-2 rounded-full transition-colors ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
+                                } ${darkMode ? 'text-white' : 'text-gray-700'} transition-colors`}
                             title={isDbConnected ? "Database Connected" : "Connect to Database"}
                             aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
                         >
-                            <RefreshIcon className={`${isCheckingConnection ? 'animate-spin' : ''}`} />
+                            <RefreshIcon className={`${isCheckingConnection ? 'animate-spin' : ''}${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`} />
                         </IconButton>
                         <button
                             onClick={handleResetFilters}
-                            className="p-1 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs"
+                            className={`p-1  rounded-lg transition-colors text-xs ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-500 text-white hover:bg-gray-600'}`}
                         >
                             Reset
                         </button>
@@ -522,10 +528,10 @@ const AdminDashboard = () => {
                             >
 
                                 <motion.div
-                                    // animate={{ opacity: [0.8, 0.8, 0.3] }} // Subtle pulse
-                                    // transition={{ loop: Infinity, duration: 1 }}
+                                // animate={{ opacity: [0.8, 0.8, 0.3] }} // Subtle pulse
+                                // transition={{ loop: Infinity, duration: 1 }}
                                 >
-                                <div className="text-lg font-semibold mb-1">Open <FaEnvelopeOpenText className="inline ml-1 animate-pulse" /></div>
+                                    <div className="text-lg font-semibold mb-1">Open <FaEnvelopeOpenText className="inline ml-1 animate-pulse" /></div>
                                 </motion.div>
                                 <div className={`text-4xl font-bold ${getNumberColor('Open')}`}>{openTickets}</div>
                             </div>
@@ -534,7 +540,7 @@ const AdminDashboard = () => {
                                 onClick={() => handleStatisticCardClick('In Progress')}
                                 className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor('In Progress')} cursor-pointer`}
                             >
-                                <div className="font-raleway text-lg font-semibold mb-1">In Progress <FaCircleNotch  className="inline ml-1 animate-spin" /></div>
+                                <div className="font-raleway text-lg font-semibold mb-1">In Progress <FaCircleNotch className="inline ml-1 animate-spin" /></div>
                                 <div className={`font-raleway text-4xl font-bold ${getNumberColor('In Progress')}`}>{inProgressTickets}</div>
                             </div>
                             {/* Resolved Tickets Card */}

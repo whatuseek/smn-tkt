@@ -20,7 +20,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton } from '@mui/material';
-import { FaSpinner, FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch , FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
+import { FaSpinner, FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch, FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
 
 
 const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, issueType, status }) => {
@@ -92,7 +92,7 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
             }
         } catch (error) {
             console.error('Error fetching tickets:', error);
-           // showNotification('Failed to fetch tickets. Please try again.', 'error');  //REMOVED
+            // showNotification('Failed to fetch tickets. Please try again.', 'error');  //REMOVED
         } finally {
             setIsLoading(false);
         }
@@ -181,14 +181,14 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                 setTickets(updatedTickets);
                 setEditingTicket(null);
                 setEditedValues({});
-               // showNotification('Ticket updated successfully.', 'success');    //REMOVED
+                // showNotification('Ticket updated successfully.', 'success');    //REMOVED
             }
         } catch (error) {
             console.error('Error updating ticket:', error);
             //showNotification(       //REMOVED
-               // error.response?.data?.message || 'Failed to update the ticket. Please try again.',
-               // 'error'
-           // );
+            // error.response?.data?.message || 'Failed to update the ticket. Please try again.',
+            // 'error'
+            // );
         }
     };
 
@@ -224,7 +224,7 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
             }
         } catch (error) {
             console.error('Error updating status:', error);
-           // showNotification('Failed to update status. Please try again.', 'error');      //REMOVED
+            // showNotification('Failed to update status. Please try again.', 'error');      //REMOVED
             fetchTickets();
         }
     };
@@ -328,13 +328,14 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                 className={`font-raleway rounded-lg shadow-md p-4 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-700'}`}
                             >
                                 <h3 className="font-semibold text-lg mb-2">Ticket ID: {ticket.ticket_id}</h3>
-                                <div className="mb-2">
+                                <div className="mb-2 space-x-2">
                                     <strong>Issue Type:</strong>
                                     {editingTicket === ticket._id ? (
                                         <select
                                             value={editedValues.issue_type}
                                             onChange={(e) => handleInputChange('issue_type', e.target.value)}
-                                            className="font-raleway px-2 py-1 border rounded text-sm"
+                                            className={`font-raleway px-2 py-1 border rounded text-sm ${darkMode ? 'text-white bg-gray-700' : 'text-gray-700 bg-white'
+                                                }`}
                                         >
                                             {[
                                                 "Speed Issue",
@@ -352,17 +353,18 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                         </span>
                                     )}
                                 </div>
-                                <div className="mb-2">
+                                <div className="mb-2 space-x-2">
                                     <strong>User ID:</strong> {ticket.user_id}
                                 </div>
-                                <div className="mb-2">
+                                <div className="mb-2 ">
                                     <strong>Mobile Number:</strong>
                                     {editingTicket === ticket._id ? (
                                         <input
-                                            type="text"
+                                            type="tel"
                                             value={editedValues.mobile_number}
                                             onChange={(e) => handleInputChange('mobile_number', e.target.value)}
-                                            className="font-raleway px-2 py-1 border rounded text-sm w-full"
+                                            className={`font-raleway px-6 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700' : 'text-gray-700 bg-white'
+                                                }`}
                                         />
                                     ) : (
                                         ticket.mobile_number
@@ -375,7 +377,8 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                             type="text"
                                             value={editedValues.location}
                                             onChange={(e) => handleInputChange('location', e.target.value)}
-                                            className="font-raleway px-2 py-1 border rounded text-sm w-full"
+                                            className={`font-raleway px-2 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700' : 'text-gray-700 bg-white'
+                                                }`}
                                         />
                                     ) : (
                                         <div className="relative">
@@ -393,13 +396,13 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                         </div>
                                     )}
                                 </div>
-                                <div className="mb-2">
+                                <div className="mb-2 space-x-2">
                                     <strong>Status:</strong>
                                     {editingStatusId === ticket._id ? (
                                         <select
                                             value={ticket.status}
                                             onChange={(e) => handleStatusChange(ticket._id, e.target.value)}
-                                            className="font-raleway px-2 py-1 rounded-full text-xs font-semibold"
+                                            className={`font-raleway px-2 py-1 rounded-full text-xs font-semibold ${darkMode ? 'text-white bg-gray-700' : 'text-gray-700'}`}
                                         >
                                             <option className="font-raleway" value="Open"> Open</option>
                                             <option className="font-raleway" value="In Progress"> In Progress</option>
@@ -407,13 +410,9 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                         </select>
                                     ) : (
                                         <span className={`font-raleway px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(ticket.status, ticket.issue_type)}`} onClick={() => setEditingStatusId(ticket._id)} style={{ cursor: 'pointer' }}>
-                                            {ticket.status === 'Open' && <FaEnvelopeOpenText className="inline mr-1
-                                            ml-1 animate-pulse" />}
-                                            {ticket.status === 'In Progress' && 
-                                            <FaCircleNotch className="inline mr-1
-                                            ml-1 animate-spin" />}
-                                            {ticket.status === 'Resolved' && 
-                                            <FaThumbsUp className="inline mr-1 ml-1 animate-bounce" />}
+                                            {ticket.status === 'Open' && <FaEnvelopeOpenText className="inline ml-1 animate-pulse mr-1" />}
+                                            {ticket.status === 'In Progress' && <FaCircleNotch className="inline ml-1 animate-spin mr-1" />}
+                                            {ticket.status === 'Resolved' && <FaThumbsUp className="inline ml-1 animate-bounce mr-1" />}
                                             {ticket.status}
                                         </span>
                                     )}
@@ -427,7 +426,8 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                         <textarea
                                             value={editedValues.comments}
                                             onChange={(e) => handleInputChange('comments', e.target.value)}
-                                            className="font-raleway px-2 py-1 border rounded text-sm w-full"
+                                            className={`font-raleway px-2 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700' : 'text-gray-700 bg-white '
+                                                }`}
                                             rows="2"
                                         />
                                     ) : (
@@ -458,19 +458,19 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                         <>
                                             <IconButton
                                                 onClick={() => handleEdit(ticket)}
-                                                className="font-raleway p-1 text-blue-600 hover:text-blue-900"
+                                                className={`font-raleway p-1  hover:text-blue-900`}
                                                 title="Edit"
                                                 aria-label="edit"
                                             >
-                                                <EditIcon />
+                                                <EditIcon className={`${darkMode ? 'text-blue-300' : 'text-blue-600'}`} />
                                             </IconButton>
                                             <IconButton
                                                 onClick={() => confirmDelete(ticket._id)}
-                                                className="font-raleway p-1 text-red-600 hover:text-red-900"
+                                                className={`font-raleway p-1   hover:text-red-900`}
                                                 title="Delete"
                                                 aria-label="delete"
                                             >
-                                                <DeleteIcon />
+                                                <DeleteIcon className={`${darkMode ? 'text-red-300' : 'text-red-600'}`} />
                                             </IconButton>
                                         </>
                                     )}
