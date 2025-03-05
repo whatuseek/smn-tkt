@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
@@ -19,7 +20,8 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton } from '@mui/material';
-import { FaSpinner } from 'react-icons/fa';
+import { FaSpinner, FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch , FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
+
 
 const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, issueType, status }) => {
     const [tickets, setTickets] = useState([]);
@@ -264,9 +266,9 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
         }
         switch (status) {
             case 'Open':
-                return `bg-yellow-100 text-yellow-800 ${darkMode ? 'dark:bg-yellow-900 dark:text-yellow-100' : ''}`;
-            case 'In Progress':
                 return `bg-blue-100 text-blue-800 ${darkMode ? 'dark:bg-blue-900 dark:text-blue-100' : ''}`;
+            case 'In Progress':
+                return `bg-orange-100 text-orange-800 ${darkMode ? 'dark:bg-orange-900 dark:text-orange-100' : ''}`;
             case 'Resolved':
                 return `bg-green-100 text-green-800 ${darkMode ? 'dark:bg-green-900 dark:text-green-100' : ''}`;
             default:
@@ -405,9 +407,13 @@ const TicketList = ({ onDataChange = () => { }, darkMode = false, searchQuery, i
                                         </select>
                                     ) : (
                                         <span className={`font-raleway px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(ticket.status, ticket.issue_type)}`} onClick={() => setEditingStatusId(ticket._id)} style={{ cursor: 'pointer' }}>
-                                            {ticket.status === 'Open' && <WarningIcon className="inline mr-1" />}
-                                            {ticket.status === 'In Progress' && <HourglassEmptyIcon className="inline mr-1" />}
-                                            {ticket.status === 'Resolved' && <CheckCircleIcon className="inline mr-1" />}
+                                            {ticket.status === 'Open' && <FaEnvelopeOpenText className="inline mr-1
+                                            ml-1 animate-pulse" />}
+                                            {ticket.status === 'In Progress' && 
+                                            <FaCircleNotch className="inline mr-1
+                                            ml-1 animate-spin" />}
+                                            {ticket.status === 'Resolved' && 
+                                            <FaThumbsUp className="inline mr-1 ml-1 animate-bounce" />}
                                             {ticket.status}
                                         </span>
                                     )}

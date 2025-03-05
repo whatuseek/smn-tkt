@@ -1,4 +1,3 @@
-// frontend/src/components/AdminDashboard.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TicketList from "./TicketList";
@@ -9,13 +8,13 @@ import { motion } from "framer-motion";
 import { FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch , FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
 import { MdDarkMode, MdLightMode } from "react-icons/md"
 import PropTypes from 'prop-types';
-import TicketForm from "./TicketForm"; // Ensure the path is correct
-import RefreshIcon from '@mui/icons-material/Refresh'; // Import RefreshIcon from Material-UI
+import TicketForm from "./TicketForm";
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { IconButton } from '@mui/material';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const [uploadStatus, setUploadStatus] = useState({ message: '', type: '' });// To show connection status
+    const [uploadStatus, setUploadStatus] = useState({ message: '', type: '', source: '' });
     const [darkMode, setDarkMode] = useState(false);
     const [showTickets, setShowTickets] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,10 +27,10 @@ const AdminDashboard = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [filteredStatus, setFilteredStatus] = useState(null);
     const homeButtonRef = useRef(null);
-    const [isDbConnected, setIsDbConnected] = useState(false); // Track DB connection state
-    const [isCheckingConnection, setIsCheckingConnection] = useState(false); // Track if connection check is in progress
-    const [searchQuery, setSearchQuery] = useState(''); // Search query state
-    const [issueType, setIssueType] = useState(''); // Issue type state
+    const [isDbConnected, setIsDbConnected] = useState(false);
+    const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [issueType, setIssueType] = useState('');
     const [availableIssueTypes, setAvailableIssueTypes] = useState([]);
 
 
@@ -59,19 +58,19 @@ const AdminDashboard = () => {
             setIsDbConnected(response.status === 200);
 
             if (response.status === 200) {
-                setUploadStatus({ message: " Connected!", type: "success" });  //Update status here
-                setTimeout(() => setUploadStatus({ message: '', type: '' }), 3000);
+                setUploadStatus({ message: " Connected!", type: "success", source: 'db' });
+                setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
 
             } else {
                 setIsDbConnected(false);
-                setUploadStatus({ message: "Failed to connect", type: "error" });      //Update status here
-                setTimeout(() => setUploadStatus({ message: '', type: '' }), 3000);
+                setUploadStatus({ message: "Failed to connect", type: "error", source: 'db' });
+                setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
             }
         } catch (error) {
             setIsDbConnected(false);
             console.error("Error checking database connection:", error);
-            setUploadStatus({ message: "Not Connected!", type: "error" });      //Update status here
-            setTimeout(() => setUploadStatus({ message: '', type: '' }), 3000);
+            setUploadStatus({ message: "Not Connected!", type: "error", source: 'db' });
+            setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
 
         } finally {
             setIsCheckingConnection(false);
@@ -112,7 +111,7 @@ const AdminDashboard = () => {
             setShowTickets(false);
             setShowUserUpload(false);
             setShowTicketForm(false);
-            setIsMenuOpen(false);  // Add this line
+            setIsMenuOpen(false);
 
         }, 500);
 
@@ -129,7 +128,7 @@ const AdminDashboard = () => {
 
     const handleUpload = async () => {
         if (!selectedFile) {
-            setUploadStatus({ message: "Please select a file.", type: "error" });
+            setUploadStatus({ message: "Please select a file.", type: "error", source: 'userUpload' });
             return;
         }
         setUploading(true);
@@ -151,10 +150,10 @@ const AdminDashboard = () => {
                 }
             );
             if (response.data.success) {
-                setUploadStatus({ message: response.data.message, type: "success" });
+                setUploadStatus({ message: response.data.message, type: "success", source: 'userUpload' });
                 setSelectedFile(null);
                 setUploadProgress(0);
-                setTimeout(() => setUploadStatus({ message: '', type: '' }), 3000);
+                setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
             } else {
                 throw new Error(response.data.message);
             }
@@ -164,8 +163,9 @@ const AdminDashboard = () => {
                     error.response?.data?.message ||
                     "Error uploading file. Please try again.",
                 type: "error",
+                source: 'userUpload'
             });
-            setTimeout(() => setUploadStatus({ message: '', type: '' }), 3000);
+            setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
         } finally {
             setUploading(false);
         }
@@ -299,7 +299,39 @@ const AdminDashboard = () => {
                             </IconButton>
                         </h1>
                         {/* Database Connection Status */}
-                        {uploadStatus.message && (
+                        {uploadStatus.message && uploadStatus.source === 'db' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${uploadStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                            >
+                                {uploadStatus.type === 'success' ? (
+                                    <FaCheckCircle className="mr-2" />
+                                ) : (
+                                    <FaExclamationCircle className="mr-2" />
+                                )}
+                                {uploadStatus.message}
+                            </motion.div>
+                        )}
+                         {uploadStatus.message && uploadStatus.source === 'ticketList' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${uploadStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                            >
+                                {uploadStatus.type === 'success' ? (
+                                    <FaCheckCircle className="mr-2" />
+                                ) : (
+                                    <FaExclamationCircle className="mr-2" />
+                                )}
+                                {uploadStatus.message}
+                            </motion.div>
+                        )}
+                         {uploadStatus.message && uploadStatus.source === 'userUpload' && (
                             <motion.div
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -510,7 +542,7 @@ const AdminDashboard = () => {
                                 onClick={() => handleStatisticCardClick('Resolved')}
                                 className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor('Resolved')} cursor-pointer`}
                             >
-                                <div className="font-raleway text-lg font-semibold mb-1">Resolved <FaThumbsUp className="inline ml-1" /></div>
+                                <div className="font-raleway text-lg font-semibold mb-1">Resolved <FaThumbsUp className="inline ml-1 animate-bounce" /></div>
                                 <div className={`font-raleway text-4xl font-bold ${getNumberColor('Resolved')}`}>{resolvedTickets}</div>
                             </div>
                         </motion.div>
@@ -527,6 +559,7 @@ const AdminDashboard = () => {
                                     searchQuery={searchQuery}
                                     issueType={issueType}
                                     status={filteredStatus}
+                                    setUploadStatus={setUploadStatus}
                                 />
                             </div>
                         </>
@@ -563,7 +596,6 @@ const AdminDashboard = () => {
                             />
                         </motion.div>
                     )}
-                    {/* REMOVE ALL OTHER Notification */}
 
 
                 </main>
