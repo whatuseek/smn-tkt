@@ -1,5 +1,5 @@
 // frontend/src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as HashRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
@@ -9,7 +9,8 @@ import UserUpload from "./components/UserUpload";
 
 const App = () => {
   return (
-    <Router>
+    // <HashRouter basename="/">
+    <HashRouter >
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<LandingPage />} />
@@ -20,16 +21,16 @@ const App = () => {
         {/* Admin Dashboard with nested routes */}
         <Route path="/admin-dashboard/*" element={<AdminDashboard />}>
           <Route index element={<AdminDashboard />} />  {/* Home route - optional if dashboard itself is the home */}
-          <Route path="tickets" element={<TicketList />} />
-          <Route path="addUser" element={<UserUpload />} />
-          <Route path="ticketForm" element={<TicketForm />} />
+          <Route path="/admin-dashboard/tickets" element={<TicketList />} />
+          <Route path="/admin-dashboard/addUser" element={<UserUpload />} />
+          <Route path="/admin-dashboard/ticketForm" element={<TicketForm />} />
           {/* <Route path="*" element={<Navigate to="/admin-dashboard" />} /> */}
         </Route>
 
         {/* Catch-all route */}
         <Route path="*" element={<LandingPage />} />
       </Routes>
-    </Router>
+    </HashRouter>
   );
 };
 
