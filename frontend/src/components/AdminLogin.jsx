@@ -1,6 +1,13 @@
 // frontend/src/components/AdminLogin.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Container,
+  TextField,
+  Button,
+  Typography,
+  // Box,
+} from "@mui/material";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -23,29 +30,84 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen shadow-emerald-100 bo">
-      <h1 className="font-raleway text-white text-2xl font-bold mb-4">Admin Login</h1>
-      <input
-        type="text"
-        placeholder="Enter Admin ID"
+    <Container
+      maxWidth="xs"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+      }}
+    >
+      <Typography component="h1" variant="h5" align="center" mb={4} gutterBottom style={{ fontFamily: "raleway" }}>
+        Admin Login
+      </Typography>
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="adminId"
+        label="Admin ID"
+        name="adminId"
+        autoComplete="adminId"
+        autoFocus
+        // InputLabelProps={{
+        //   style: {
+        //     fontFamily: "Raleway",
+        //   },
+        // }}
+        slotProps={{
+          input: {
+            style: {
+              fontFamily: "Raleway",
+            },
+          },
+          inputLabel: {
+            style: {
+              fontFamily: "Raleway",
+            },
+          },
+        }}
         value={adminId}
         onChange={(e) => setAdminId(e.target.value)}
-        className="font-raleway mb-4 px-3 py-2 border rounded w-64"
       />
-      <input
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        name="password"
+        label="Password"
         type="password"
-        placeholder="Enter Password"
+        id="password"
+        autoComplete="current-password"
+        slotProps={{
+          input: {
+            style: {
+              fontFamily: "Raleway",
+            },
+          },
+          inputLabel: {
+            style: {
+              fontFamily: "Raleway",
+            },
+          },
+        }}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="font-raleway mb-4 px-3 py-2 border rounded w-64"
       />
-      <button
+      <Button
+        fullWidth
+        variant="contained"
+        // color="primary"
+        sx={{ mt: 3, mb: 2, backgroundColor: "#047857" }}
+        className="font-raleway"
         onClick={handleLogin}
-        className="font-raleway bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
+        style={{ fontFamily: "raleway" }}
       >
         Login
-      </button>
-    </div>
+      </Button>
+    </Container>
   );
 };
 

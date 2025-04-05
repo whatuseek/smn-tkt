@@ -4,28 +4,33 @@ import LandingPage from "./components/LandingPage";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import TicketForm from "./components/TicketForm"; // Ensure this path is correct
-import AdminRouteGuard from "./components/AdminRouteGuard";
+import TicketList from "./components/TicketList";
+import UserUpload from "./components/UserUpload";
 
 const App = () => {
-    return (
-        <Router>
-            <Routes>
-                {/* Landing Page */}
-                <Route path="/" element={<LandingPage />} />
+  return (
+    <Router>
+      <Routes>
+        {/* Landing Page */}
+        <Route path="/" element={<LandingPage />} />
 
-                {/* Admin Login */}
-                <Route path="/admin-login" element={<AdminLogin />} />
+        {/* Admin Login */}
+        <Route path="/admin-login" element={<AdminLogin />} />
 
-                {/* Ticket Form - as a Route */}
-                <Route path="/ticket-form" element={<AdminRouteGuard><TicketForm /></AdminRouteGuard>} />
+        {/* Admin Dashboard with nested routes */}
+        <Route path="/admin-dashboard/*" element={<AdminDashboard />}>
+          <Route index element={<AdminDashboard />} />  {/* Home route - optional if dashboard itself is the home */}
+          <Route path="tickets" element={<TicketList />} />
+          <Route path="addUser" element={<UserUpload />} />
+          <Route path="ticketForm" element={<TicketForm />} />
+          {/* <Route path="*" element={<Navigate to="/admin-dashboard" />} /> */}
+        </Route>
 
-                {/* Admin Dashboard */}
-                <Route path="/admin-dashboard" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
-                 <Route path="*" element={<LandingPage />} />  {/* Add this line */}
-                 
-            </Routes>
-        </Router>
-    );
+        {/* Catch-all route */}
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    </Router>
+  );
 };
 
 export default App;

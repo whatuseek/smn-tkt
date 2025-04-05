@@ -70,14 +70,7 @@ const LandingPage = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.6 }}
                 >
-                    {/* <div className="text-white flex flex-col items-center mb-4 md:mb-0">
-                          <FaWifi className="text-4xl mb-2 text-blue-400 drop-shadow-lg" />
-                          <p className="text-gray-300 text-sm">High-speed internet services to keep you connected.</p>
-                     </div>
-                     <div className="text-white flex flex-col items-center">
-                       <FaTv className="text-4xl mb-2 text-red-400 drop-shadow-lg"/>
-                       <p className="text-gray-300 text-sm">Premium cable TV packages for ultimate entertainment.</p>
-                    </div> */}
+                    
                 </motion.div>
                 {/* Buttons */}
                 <motion.div
@@ -86,12 +79,7 @@ const LandingPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.7 }}
                 >
-                    {/* <Link
-                        to="/ticket-form"
-                        className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md drop-shadow-lg transform hover:scale-105 transition-transform duration-300 mb-4 md:mb-0"
-                    >
-                        Tickets
-                    </Link> */}
+                    
                     <Link
                         to="/admin-login"
                         className="font-raleway bg-green-600 text-white px-5 py-3 rounded-lg hover:bg-green-700 transition-colors shadow-md drop-shadow-lg transform hover:scale-105 transition-transform duration-300"

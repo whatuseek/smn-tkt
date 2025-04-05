@@ -1,28 +1,38 @@
-/* eslint-disable no-unused-vars */
+// frontend/src/components/AdminDashboard.jsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import TicketList from "./TicketList";
-import AdminRouteGuard from "./AdminRouteGuard";
 import UserUpload from "./UserUpload";
+import TicketForm from "./TicketForm";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { FaCheckCircle, FaExclamationCircle, FaBars, FaHome, FaTicketAlt, FaCog, FaSignOutAlt, FaEnvelopeOpenText, FaCircleNotch, FaThumbsUp, FaListAlt, FaUserPlus, FaPowerOff } from "react-icons/fa";
-import { MdDarkMode, MdLightMode } from "react-icons/md"
-import PropTypes from 'prop-types';
-import TicketForm from "./TicketForm";
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { IconButton } from '@mui/material';
+import {
+    FaCheckCircle,
+    FaExclamationCircle,
+    FaBars,
+    FaTimes,
+    FaHome,
+    FaTicketAlt,
+    FaSignOutAlt,
+    FaEnvelopeOpenText,
+    FaCircleNotch,
+    FaThumbsUp,
+    FaListAlt,
+    FaUserPlus,
+    FaSync
+} from "react-icons/fa";
+import { MdDarkMode, MdLightMode } from "react-icons/md";
+import PropTypes from "prop-types";
+import { IconButton } from "@mui/material";
+import { useSwipeable } from 'react-swipeable';  // Import useSwipeable
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const [uploadStatus, setUploadStatus] = useState({ message: '', type: '', source: '' });
+    const location = useLocation();
+    const [uploadStatus, setUploadStatus] = useState({ message: "", type: "", source: "" });
     const [darkMode, setDarkMode] = useState(false);
-    const [showTickets, setShowTickets] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('dashboardHome');
-    const [showUserUpload, setShowUserUpload] = useState(false);
-    const [showTicketForm, setShowTicketForm] = useState(false);
-    const [tickets, setTickets] = useState([]);// NEW State to store tickets for summary
+    const [tickets, setTickets] = useState([]);
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -30,49 +40,59 @@ const AdminDashboard = () => {
     const homeButtonRef = useRef(null);
     const [isDbConnected, setIsDbConnected] = useState(false);
     const [isCheckingConnection, setIsCheckingConnection] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [issueType, setIssueType] = useState('');
+    const [searchQuery, setSearchQuery] = useState("");
+    const [issueType, setIssueType] = useState("");
     const [availableIssueTypes, setAvailableIssueTypes] = useState([]);
+    const [isTouchDevice, setIsTouchDevice] = useState(false); // New state variable
 
-
+    // Focus home button on mount
     useEffect(() => {
-        if (showTickets) {
-            setActiveTab('tickets');
-        } else if (showUserUpload) {
-            setActiveTab('upload');
-        } else if (showTicketForm) {
-            setActiveTab('ticketForm');
-        } else {
-            setActiveTab('dashboardHome');
+        if (homeButtonRef.current) {
+            homeButtonRef.current.focus();
         }
-    }, [showTickets, showUserUpload, showTicketForm]);
+    }, []);
+
+    // Detect touch device on mount
+    useEffect(() => {
+        setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0);
+    }, []);
+
+    // Determine active tab based on route
+    const getActiveTab = () => {
+        if (location.pathname.includes("tickets")) return "tickets";
+        if (location.pathname.includes("addUser")) return "upload";
+        if (location.pathname.includes("ticketForm")) return "ticketForm";
+        return "dashboardHome";
+    };
+    const [activeTab, setActiveTab] = useState(getActiveTab());
+    useEffect(() => {
+        setActiveTab(getActiveTab());
+    }, [location.pathname]);
 
     const handleLogout = () => {
         localStorage.removeItem("adminLoggedIn");
         navigate("/");
     };
 
+    // Check database connection
     const checkDbConnection = async () => {
         setIsCheckingConnection(true);
         try {
             const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/db-check`);
-            setIsDbConnected(response.status === 200);
-
-            if (response.status === 200) {
-                setUploadStatus({ message: " Connected!", type: "success", source: 'db' });
-                setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
-
+            if (response && response.status === 200) {
+                setIsDbConnected(true);
+                setUploadStatus({ message: "Connected!", type: "success", source: "db" });
+                setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
             } else {
                 setIsDbConnected(false);
-                setUploadStatus({ message: "Failed to connect", type: "error", source: 'db' });
-                setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
+                setUploadStatus({ message: "Failed to connect", type: "error", source: "db" });
+                setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
             }
         } catch (error) {
             setIsDbConnected(false);
             console.error("Error checking database connection:", error);
-            setUploadStatus({ message: "Not Connected!", type: "error", source: 'db' });
-            setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
-
+            setUploadStatus({ message: "Not Connected!", type: "error", source: "db" });
+            setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
         } finally {
             setIsCheckingConnection(false);
         }
@@ -86,41 +106,16 @@ const AdminDashboard = () => {
         setDarkMode(!darkMode);
     };
 
-    const handleTicketFormClick = () => {
-        setShowTicketForm(true);
-        setShowTickets(false);
-        setShowUserUpload(false);
-        setFilteredStatus(null);
-    };
-
-    const handleTicketsLinkClick = () => {
-        setShowTickets(true);
-        setShowUserUpload(false);
-        setShowTicketForm(false);
-        setFilteredStatus(null);
-    }
-
-    const handleUserUploadClick = () => {
-        setShowUserUpload(true);
-        setShowTickets(false);
-        setShowTicketForm(false);
-        setFilteredStatus(null);
-    };
-
     const handleHomeButtonClick = () => {
-        setTimeout(() => {
-            setShowTickets(false);
-            setShowUserUpload(false);
-            setShowTicketForm(false);
-            setIsMenuOpen(false);
-
-        }, 500);
-
+        navigate("/admin-dashboard");
         setFilteredStatus(null);
+        setIsMenuOpen(false);
     };
 
     const handleFileChange = (event) => {
-        setSelectedFile(event.target.files[0]);
+        if (event.target.files && event.target.files.length > 0) {
+            setSelectedFile(event.target.files[0]);
+        }
     };
 
     const handleClearFile = () => {
@@ -129,7 +124,7 @@ const AdminDashboard = () => {
 
     const handleUpload = async () => {
         if (!selectedFile) {
-            setUploadStatus({ message: "Please select a file.", type: "error", source: 'userUpload' });
+            setUploadStatus({ message: "Please select a file.", type: "error", source: "userUpload" });
             return;
         }
         setUploading(true);
@@ -138,63 +133,53 @@ const AdminDashboard = () => {
 
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/user/upload-users",
+                `${import.meta.env.VITE_BACKEND_URL}/api/user/upload-users`,
                 formData,
                 {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
+                    headers: { "Content-Type": "multipart/form-data" },
                     onUploadProgress: (progressEvent) => {
                         const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
                         setUploadProgress(progress);
-                    },
+                    }
                 }
             );
             if (response.data.success) {
-                setUploadStatus({ message: response.data.message, type: "success", source: 'userUpload' });
+                setUploadStatus({ message: response.data.message, type: "success", source: "userUpload" });
                 setSelectedFile(null);
                 setUploadProgress(0);
-                setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
+                setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
             } else {
                 throw new Error(response.data.message);
             }
         } catch (error) {
             setUploadStatus({
-                message:
-                    error.response?.data?.message ||
-                    "Error uploading file. Please try again.",
+                message: error.response?.data?.message || "Error uploading file. Please try again.",
                 type: "error",
-                source: 'userUpload'
+                source: "userUpload"
             });
-            setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
+            setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
         } finally {
             setUploading(false);
         }
     };
 
+    // Framer Motion container variants for transitions
     const containerVariants = {
         hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { duration: 0.5 }
-        }
+        visible: { opacity: 1, transition: { duration: 0.5 } }
     };
 
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-    };
-
-
+    // Status badge colors
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Total':
-                return `bg-gray-100 text-gray-700 ${darkMode ? 'dark:bg-gray-800 dark:text-gray-300' : ''}`;
-            case 'Open':
-                return `bg-blue-100 text-blue-800 ${darkMode ? 'dark:bg-blue-900 dark:text-blue-100' : ''}`;
-            case 'In Progress':
-                return `bg-orange-100 text-orange-800 ${darkMode ? 'dark:bg-orange-900 dark:text-orange-100' : ''}`;
-            case 'Resolved':
-                return `bg-green-100 text-green-800 ${darkMode ? 'dark:bg-green-900 dark:text-green-100' : ''}`;
+            case "Total":
+                return `bg-gray-100 text-gray-700 ${darkMode ? "dark:bg-gray-800 dark:text-gray-300" : ""}`;
+            case "Open":
+                return `bg-blue-100 text-blue-800 ${darkMode ? "dark:bg-blue-900 dark:text-blue-100" : ""}`;
+            case "In Progress":
+                return `bg-orange-100 text-orange-800 ${darkMode ? "dark:bg-orange-900 dark:text-orange-100" : ""}`;
+            case "Resolved":
+                return `bg-green-100 text-green-800 ${darkMode ? "dark:bg-green-900 dark:text-green-100" : ""}`;
             default:
                 return `bg-gray-100 text-gray-800 ${darkMode ? "dark:bg-gray-700 dark:text-gray-100" : ""}`;
         }
@@ -202,64 +187,61 @@ const AdminDashboard = () => {
 
     const getNumberColor = (status) => {
         switch (status) {
-            case 'Open':
-                return `text-blue-800 ${darkMode ? 'dark:bg-blue-900 dark:text-blue-100' : ''}`;
-            case 'In Progress':
-                return `text-orange-800 ${darkMode ? 'dark:bg-orange-900 dark:text-orange-100' : ''}`;
-            case 'Resolved':
-                return `text-green-800 ${darkMode ? 'dark:bg-green-900 dark:text-green-100' : ''}`;
+            case "Open":
+                return `text-blue-800 ${darkMode ? "dark:bg-blue-900 dark:text-blue-100" : ""}`;
+            case "In Progress":
+                return `text-orange-800 ${darkMode ? "dark:bg-orange-900 dark:text-orange-100" : ""}`;
+            case "Resolved":
+                return `text-green-800 ${darkMode ? "dark:bg-green-900 dark:text-green-100" : ""}`;
             default:
-                return ``;
+                return "";
         }
     };
 
+    // Fetch tickets and issue types on mount
     useEffect(() => {
         const fetchAllTickets = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`);
-                setTickets(response.data);
+                setTickets(response?.data || []);
             } catch (error) {
                 console.error("Error fetching tickets:", error);
+                setTickets([]);
             }
         };
+
         const fetchIssueTypes = async () => {
             try {
-                const response = await axios.get(import.meta.env.VITE_BACKEND_URL + '/api/admin/issue-types');
-                setAvailableIssueTypes(response.data);
+                const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/issue-types`);
+                setAvailableIssueTypes(response?.data || []);
             } catch (error) {
-                console.error('Error fetching issue types:', error);
+                console.error("Error fetching issue types:", error);
+                setAvailableIssueTypes([]);
             }
         };
+
         fetchAllTickets();
         fetchIssueTypes();
     }, []);
 
     const totalTickets = tickets.length;
-    const openTickets = tickets.filter(ticket => ticket.status === 'Open').length;
-    const inProgressTickets = tickets.filter(ticket => ticket.status === 'In Progress').length;
-    const resolvedTickets = tickets.filter(ticket => ticket.status === 'Resolved').length;
+    const openTickets = tickets.filter((ticket) => ticket.status === "Open").length;
+    const inProgressTickets = tickets.filter((ticket) => ticket.status === "In Progress").length;
+    const resolvedTickets = tickets.filter((ticket) => ticket.status === "Resolved").length;
 
-
+    // Fetch tickets based on filters
     const fetchTickets = async () => {
         try {
             let url = `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`;
             const params = new URLSearchParams();
-
-            if (issueType) {
-                params.append('issue_type', issueType);
-            }
-            if (filteredStatus) {
-                params.append('status', filteredStatus);
-            }
-
-            if (params.toString()) {
-                url += `?${params.toString()}`;
-            }
-
+            if (issueType) params.append("issue_type", issueType);
+            if (filteredStatus) params.append("status", filteredStatus);
+            if (params.toString()) url += `?${params.toString()}`;
             const response = await axios.get(url);
-            setTickets(response.data);
+            setTickets(response?.data || []);
         } catch (error) {
-            console.error('Error fetching tickets:', error);
+            console.error("Error fetching tickets:", error);
+            setTickets([]);
         }
     };
 
@@ -268,345 +250,545 @@ const AdminDashboard = () => {
     }, [issueType, filteredStatus]);
 
     const handleStatisticCardClick = (status) => {
-        setShowTickets(true);
-        setShowUserUpload(false);
-        setShowTicketForm(false);
+        navigate("/admin-dashboard/tickets");
         setFilteredStatus(status);
     };
+
     const handleResetFilters = () => {
-        setIssueType('');
-        setSearchQuery('');
-        setFilteredStatus(null)
+        setIssueType("");
+        setSearchQuery("");
+        setFilteredStatus(null);
     };
 
+    const closeMenu = () => {
+        setIsMenuOpen(false);
+    };
+
+    const swipeHandlers = useSwipeable({
+        onSwiped: (eventData) => {
+            console.log("Swiped!", eventData);
+            closeMenu();
+        },
+        preventDefaultTouchmoveEvent: true,
+        trackMouse: false,
+    });
 
     return (
-        <AdminRouteGuard>
-            <div className={`font min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} flex flex-col`}>
-                {/* Header */}
-                <header className={`sticky top-0 z-10 flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 rounded-lg  w-full ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-                    <div className="flex items-center justify-between w-full sm:w-auto">
-                        <h1 className="font-raleway text-2xl sm:text-3xl font-bold">Dashboard
-                            {/* DB Connection Button and Status */}
-                            <IconButton
-                                // onClick={checkDbConnection}
-                                // disabled={isCheckingConnection}
-                                // className={`p-2 rounded-full transition-colors`}
-                                // title={isDbConnected ? "Database Connected" : "Connect to Database"}
-                                // aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
-                                onClick={checkDbConnection}
-                            disabled={isCheckingConnection}
-                            className={`p-2 rounded-full transition-colors ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
-                                } ${darkMode ? 'text-white' : 'text-gray-700'} transition-colors`}
-                            title={isDbConnected ? "Database Connected" : "Connect to Database"}
-                            aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
-                            >
-                                {/* <FaPowerOff className={`${isCheckingConnection ? 'animate-pulse' : ''} ${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`}  /> */}
-                                <FaPowerOff className={`${isCheckingConnection ? 'animate-pulse' : ''} ${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`}  />
-                                <h6 className={`pl-2 ${isCheckingConnection ? '' : ''}${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`}> 👈</h6>
-                            </IconButton>
-                        </h1>
-                        {/* Database Connection Status */}
-                        {uploadStatus.message && uploadStatus.source === 'db' && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${uploadStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-                            >
-                                {uploadStatus.type === 'success' ? (
-                                    <FaCheckCircle className="mr-2" />
-                                ) : (
-                                    <FaExclamationCircle className="mr-2" />
-                                )}
-                                {uploadStatus.message}
-                            </motion.div>
-                        )}
-                        {uploadStatus.message && uploadStatus.source === 'ticketList' && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${uploadStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-                            >
-                                {uploadStatus.type === 'success' ? (
-                                    <FaCheckCircle className="mr-2" />
-                                ) : (
-                                    <FaExclamationCircle className="mr-2" />
-                                )}
-                                {uploadStatus.message}
-                            </motion.div>
-                        )}
-                        {uploadStatus.message && uploadStatus.source === 'userUpload' && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${uploadStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-                            >
-                                {uploadStatus.type === 'success' ? (
-                                    <FaCheckCircle className="mr-2" />
-                                ) : (
-                                    <FaExclamationCircle className="mr-2" />
-                                )}
-                                {uploadStatus.message}
-                            </motion.div>
-                        )}
-                        {/* Hamburger Menu Button */}
-                        <button onClick={toggleMenu} className="sm:hidden flex it text-gray-500 hover:text-gray-700 focus:outline-none">
-                            <FaBars className="h-6 w-6" />
-                        </button>
-
-                    </div>
-
-                    <nav className={`flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 ${isMenuOpen ? 'block' : 'hidden'} sm:flex`}>
-                        <button
-                            onClick={handleHomeButtonClick}
-                            ref={homeButtonRef}
-                            title="Home"  // Tooltip
-                            className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${darkMode
-                                ? activeTab === 'dashboardHome'
-                                    ? 'bg-gray-700 text-white'
-                                    : 'text-gray-300 hover:bg-gray-700'
-                                : activeTab === 'dashboardHome'
-                                    ? 'bg-gray-200 text-gray-900'
-                                    : 'text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            <FaHome className="mr-1" /> Home
-                        </button>
-                        <button
-                            onClick={() => { handleTicketsLinkClick(); setIsMenuOpen(false); }}
-                            title="Tickets"  // Tooltip
-                            className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${darkMode
-                                ? activeTab === 'tickets'
-                                    ? 'bg-gray-700 text-white'
-                                    : 'text-gray-300 hover:bg-gray-700'
-                                : activeTab === 'tickets'
-                                    ? 'bg-gray-200 text-gray-900'
-                                    : 'text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            <FaListAlt className="mr-1" /> Lists
-                        </button>
-                        <button
-                            onClick={() => { handleUserUploadClick(); setIsMenuOpen(false); }}
-                            title="Add User"  // Tooltip
-                            className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${darkMode
-                                ? activeTab === 'upload'
-                                    ? 'bg-gray-700 text-white'
-                                    : 'text-gray-300 hover:bg-gray-700'
-                                : activeTab === 'upload'
-                                    ? 'bg-gray-200 text-gray-900'
-                                    : 'text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            <FaUserPlus className="mr-1" /> Add User
-                        </button>
-                        <button
-                            onClick={() => { handleTicketFormClick(); setIsMenuOpen(false); }}
-                            title="Ticket Form"  // Tooltip
-                            className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition ${darkMode
-                                ? activeTab === 'ticketForm'
-                                    ? 'bg-gray-700 text-white'
-                                    : 'text-gray-300 hover:bg-gray-700'
-                                : activeTab === 'ticketForm'
-                                    ? 'bg-gray-200 text-gray-900'
-                                    : 'text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            <FaTicketAlt className="mr-1" /> Ticket+
-                        </button>
-                        {/* <a href="#" title="Settings" // Tooltip
-                            className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-200"} rounded-lg transition`}>
-                            <FaCog className="mr-1" /> Settings
-                        </a> */}
-
-                        {/* Dark Mode Toggle Switch */}
-                        <div className="flex items-center">
-                            {darkMode ? (
-                                <MdLightMode className="mr-2 h-5 w-5 text-gray-300" />
-                            ) : (
-                                <MdDarkMode className="mr-2 h-5 w-5 text-gray-700" />
-                            )}
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    value=""
-                                    className="sr-only peer"
-                                    checked={darkMode}
-                                    onChange={toggleDarkMode}
-                                />
-                                <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}>
-                                    <div className="absolute inset-0 flex items-center justify-center h-full w-full text-gray-500 transition-opacity">
-
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <button
-                            onClick={handleLogout}
-                            title="Logout"  // Tooltip
-                            className={`font-raleway flex items-center px-3 py-1 sm:px-4 sm:py-2 ${darkMode ? "bg-red-600 hover:bg-red-700" : "bg-red-500 hover:bg-red-600"} text-white rounded-lg transition`}
-                        >
-                            <FaSignOutAlt className="mr-1" /> Logout
-                        </button>
-                    </nav>
-
-                </header>
-
-                {/* Search and Filter Section */}
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className={` sticky top-[60px] font-raleway flex flex-col   items-center justify-between p-2 rounded-lg shadow-xl ${darkMode ? "bg-gray-800 text-white" : "bg-white"}`}
-                >
-                    <div className="w-full mb-1">
-                        <input
-                            type="text"
-                            placeholder="Search tickets..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`font-raleway w-full px-2 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs ${darkMode ? 'bg-gray-700 text-white border-gray-600' : ''}`}
+        <div className={`font-raleway font min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} flex flex-col`}>
+            {/* FIXED TOP HEADER */}
+            <header
+                className={`sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6
+                    ${darkMode ? "bg-gray-800" : "bg-white"} shadow`}
+            >
+                <div className="flex items-center">
+                    <h1 className="font-raleway text-2xl sm:text-3xl font-bold mr-2">
+                        Dashboard
+                    </h1>
+                    <IconButton
+                        onClick={checkDbConnection}
+                        disabled={isCheckingConnection}
+                        className={`p-2 rounded-full transition-colors
+                        ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}
+                        ${darkMode ? "text-white" : "text-gray-700"}`}
+                        title={isDbConnected ? "Database Connected" : "Connect to Database"}
+                        aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
+                    >
+                        <FaSync
+                            style={{ fontSize: "16px" }}
+                            className={`${isCheckingConnection ? " animate-pulse" : ""}
+                          ${darkMode ? "text-white hover:text-green-300" : "text-gray-700 hover:text-green-800"}`}
                         />
-                    </div>
-                    <div className="flex items-center space-x-1">
-                        <select
-                            value={issueType}
-                            onChange={(e) => setIssueType(e.target.value)}
-                            className={`font-raleway px-2 py-1 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs ${darkMode ? 'bg-gray-700 text-white border-gray-600' : ''}`}
-                        >
-                            <option className="font-raleway" value="">All Issues</option>
-                            {availableIssueTypes.map((type) => (
-                                <option className="font-raleway" key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
-                        <IconButton
-                            onClick={checkDbConnection}
-                            disabled={isCheckingConnection}
-                            className={`p-2 rounded-full transition-colors ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"
-                                } ${darkMode ? 'text-white' : 'text-gray-700'} transition-colors`}
-                            title={isDbConnected ? "Database Connected" : "Connect to Database"}
-                            aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
-                        >
-                            <RefreshIcon className={`${isCheckingConnection ? 'animate-spin' : ''}${darkMode ? 'text-white hover:text-green-300' : 'text-gray-700 hover:text-green-800'}`} />
-                        </IconButton>
-                        <button
-                            onClick={handleResetFilters}
-                            className={`p-1  rounded-lg transition-colors text-xs ${darkMode ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-500 text-white hover:bg-gray-600'}`}
-                        >
-                            Reset
-                        </button>
-                    </div>
-                </motion.div>
-
-                {/* Main Content */}
-                <main className="p-4 sm:p-6   flex-1 overflow-y-auto w-full pt-10">
-
-                    {/* Ticket Statistics */}
-                    {!showTickets && !showUserUpload && !showTicketForm && (
+                    </IconButton>
+                    {uploadStatus.message && uploadStatus.source === "db" && (
                         <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            className={`font-raleway grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8`}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className={`ml-2 flex items-center px-3 py-1 rounded-md text-sm font-medium
+                         ${uploadStatus.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
                         >
-                            {/* Total Tickets Card */}
-                            <div className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-700"}`}>
-                                <div className="text-lg font-semibold mb-1"> Total Tickets <FaTicketAlt className="inline ml-1" /></div>
-                                <div className={`text-4xl font-bold`}>{totalTickets}</div>
-                            </div>
-                            {/* Open Tickets Card */}
-                            <div
-                                onClick={() => handleStatisticCardClick('Open')}
-                                className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor('Open')} cursor-pointer`}
-                            >
+                            {uploadStatus.type === "success" ? <FaCheckCircle className="mr-2" /> : <FaExclamationCircle className="mr-2" />}
+                            {uploadStatus.message}
+                        </motion.div>
+                    )}
+                </div>
 
-                                <motion.div
-                                // animate={{ opacity: [0.8, 0.8, 0.3] }} // Subtle pulse
-                                // transition={{ loop: Infinity, duration: 1 }}
+                {/* DESKTOP NAVIGATION */}
+                <div className="hidden sm:flex items-center space-x-4">
+                    <Link
+                        to="/admin-dashboard"
+                        onClick={handleHomeButtonClick}
+                        ref={homeButtonRef}
+                        className={`px-3 py-1 rounded-lg transition font-raleway
+                        ${darkMode
+                                ? activeTab === "dashboardHome"
+                                    ? "bg-gray-700 text-white"
+                                    : "text-gray-300 hover:bg-gray-700"
+                                : activeTab === "dashboardHome"
+                                    ? "bg-gray-200 text-gray-900"
+                                    : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                    >
+                        <FaHome className="inline mr-1" />
+                        Home
+                    </Link>
+                    <Link
+                        to="/admin-dashboard/tickets"
+                        className={`px-3 py-1 rounded-lg transition font-raleway
+                        ${darkMode
+                                ? activeTab === "tickets"
+                                    ? "bg-gray-700 text-white"
+                                    : "text-gray-300 hover:bg-gray-700"
+                                : activeTab === "tickets"
+                                    ? "bg-gray-200 text-gray-900"
+                                    : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                    >
+                        <FaListAlt className="inline mr-1" />
+                        Lists
+                    </Link>
+                    <Link
+                        to="/admin-dashboard/addUser"
+                        className={`px-3 py-1 rounded-lg transition font-raleway
+                        ${darkMode
+                                ? activeTab === "upload"
+                                    ? "bg-gray-700 text-white"
+                                    : "text-gray-300 hover:bg-gray-700"
+                                : activeTab === "upload"
+                                    ? "bg-gray-200 text-gray-900"
+                                    : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                    >
+                        <FaUserPlus className="inline mr-1" />
+                        Add User
+                    </Link>
+                    <Link
+                        to="/admin-dashboard/ticketForm"
+                        className={`px-3 py-1 rounded-lg transition font-raleway
+                        ${darkMode
+                                ? activeTab === "ticketForm"
+                                    ? "bg-gray-700 text-white"
+                                    : "text-gray-300 hover:bg-gray-700"
+                                : activeTab === "ticketForm"
+                                    ? "bg-gray-200 text-gray-900"
+                                    : "text-gray-700 hover:bg-gray-200"
+                            }`}
+                    >
+                        <FaTicketAlt className="inline mr-1" />
+                        Ticket+
+                    </Link>
+                    <div className="flex items-center">
+                        {darkMode ? <MdLightMode className="mr-2 h-5 w-5 text-gray-300" /> : <MdDarkMode className="mr-2 h-5 w-5 text-gray-700" />}
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} />
+                            <div
+                                className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300
+                                  dark:peer-focus:ring-blue-800 rounded-full dark:bg-gray-700
+                                  peer-checked:after:translate-x-full peer-checked:after:border-white
+                                  after:absolute after:top-[2px] after:left-[2px] after:bg-white
+                                  after:border-gray-300 after:border after:rounded-full
+                                  after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}
+                            />
+                        </label>
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className={`px-3 py-1 rounded-lg transition font-raleway flex items-center
+                        ${darkMode ? "bg-red-600 hover:bg-red-700" : "bg-red-500 hover:bg-red-600"}
+                        text-white`}
+                    >
+                        <FaSignOutAlt className="mr-1" />
+                        Logout
+                    </button>
+                </div>
+
+                {/* MOBILE: Hamburger Button */}
+                <button
+                    onClick={() => setIsMenuOpen(true)}
+                    className="sm:hidden flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                    <FaBars className="h-6 w-6" />
+                </button>
+            </header>
+
+            {/* MOBILE MENU OVERLAY WITH GLASSMORPHISM */}
+            {isMenuOpen && (
+                <>
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-40 z-40"
+                        onClick={() => setIsMenuOpen(false)}
+                    />
+                    {/* Slide-Out Menu */}
+                    {isTouchDevice ? (
+                        <div {...swipeHandlers} >
+                            <motion.div
+                                initial={{ x: "100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "100%" }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                className={`fixed top-0 right-0 h-full w-3/4 max-w-xs z-50
+                            bg-white/30 dark:bg-gray-800/30
+                            backdrop-blur-md border-l border-white/40 dark:border-gray-700/40
+                            shadow-xl`}
+                            >
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 focus:outline-none"
                                 >
-                                    <div className="text-lg font-semibold mb-1">Open <FaEnvelopeOpenText className="inline ml-1 animate-pulse" /></div>
-                                </motion.div>
-                                <div className={`text-4xl font-bold ${getNumberColor('Open')}`}>{openTickets}</div>
-                            </div>
-                            {/* In Progress Tickets Card */}
-                            <div
-                                onClick={() => handleStatisticCardClick('In Progress')}
-                                className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor('In Progress')} cursor-pointer`}
-                            >
-                                <div className="font-raleway text-lg font-semibold mb-1">In Progress <FaCircleNotch className="inline ml-1 animate-spin" /></div>
-                                <div className={`font-raleway text-4xl font-bold ${getNumberColor('In Progress')}`}>{inProgressTickets}</div>
-                            </div>
-                            {/* Resolved Tickets Card */}
-                            <div
-                                onClick={() => handleStatisticCardClick('Resolved')}
-                                className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor('Resolved')} cursor-pointer`}
-                            >
-                                <div className="font-raleway text-lg font-semibold mb-1">Resolved <FaThumbsUp className="inline ml-1 animate-bounce" /></div>
-                                <div className={`font-raleway text-4xl font-bold ${getNumberColor('Resolved')}`}>{resolvedTickets}</div>
-                            </div>
-                        </motion.div>
-                    )}
+                                    <FaTimes className="h-6 w-6" />
+                                </button>
 
+                                {/* Mobile Navigation Links */}
+                                <nav className="mt-16 p-6 space-y-4">
+                                    <Link
+                                        to="/admin-dashboard"
+                                        onClick={() => {
+                                            handleHomeButtonClick();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className={`block px-4 py-3 rounded-lg transition font-raleway
+                                ${darkMode
+                                                ? activeTab === "dashboardHome"
+                                                    ? "bg-gray-700 text-white"
+                                                    : "text-gray-300 hover:bg-gray-700"
+                                                : activeTab === "dashboardHome"
+                                                    ? "bg-gray-200 text-gray-900"
+                                                    : "text-gray-100 hover:bg-gray-200"
+                                            }`}
+                                    >
+                                        <FaHome className="inline mr-1" />
+                                        Home
+                                    </Link>
+                                    <Link
+                                        to="/admin-dashboard/tickets"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`block px-4 py-3 rounded-lg transition font-raleway
+                                ${darkMode
+                                                ? activeTab === "tickets"
+                                                    ? "bg-gray-700 text-white"
+                                                    : "text-gray-300 hover:bg-gray-700"
+                                                : activeTab === "tickets"
+                                                    ? "bg-gray-200 text-gray-900"
+                                                    : "text-gray-100 hover:bg-gray-200"
+                                            }`}
+                                    >
+                                        <FaListAlt className="inline mr-1" />
+                                        Lists
+                                    </Link>
+                                    <Link
+                                        to="/admin-dashboard/addUser"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`block px-4 py-3 rounded-lg transition font-raleway
+                                ${darkMode
+                                                ? activeTab === "upload"
+                                                    ? "bg-gray-700 text-white"
+                                                    : "text-gray-300 hover:bg-gray-700"
+                                                : activeTab === "upload"
+                                                    ? "bg-gray-200 text-gray-900"
+                                                    : "text-gray-100 hover:bg-gray-200"
+                                            }`}
+                                    >
+                                        <FaUserPlus className="inline mr-1" />
+                                        Add User
+                                    </Link>
+                                    <Link
+                                        to="/admin-dashboard/ticketForm"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`block px-4 py-3 rounded-lg transition font-raleway
+                                ${darkMode
+                                                ? activeTab === "ticketForm"
+                                                    ? "bg-gray-700 text-white"
+                                                    : "text-gray-300 hover:bg-gray-700"
+                                                : activeTab === "ticketForm"
+                                                    ? "bg-gray-200 text-gray-900"
+                                                    : "text-gray-100 hover:bg-gray-200"
+                                            }`}
+                                    >
+                                        <FaTicketAlt className="inline mr-1" />
+                                        Ticket+
+                                    </Link>
 
-                    {/* Ticket List */}
-                    {showTickets && (
-                        <>
+                                    {/* Dark Mode Toggle (mobile) */}
+                                    <div className="flex items-center px-4 py-3 space-x-3 rounded-lg transition">
+                                        {darkMode ? (
+                                            <MdLightMode className="h-5 w-5 text-gray-300" />
+                                        ) : (
+                                            <MdDarkMode className="h-5 w-5 text-gray-100" />
+                                        )}
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} />
+                                            <div
+                                                className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-100
+                                  dark:peer-focus:ring-blue-100 rounded-full dark:bg-gray-700
+                                  peer-checked:after:translate-x-full peer-checked:after:border-white
+                                  after:absolute after:top-[2px] after:left-[2px] after:bg-white
+                                  after:border-gray-300 after:border after:rounded-full
+                                  after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}
+                                            />
+                                        </label>
+                                    </div>
 
-                            <div className="flex-1 overflow-auto">
-                                <TicketList
-                                    darkMode={darkMode}
-                                    searchQuery={searchQuery}
-                                    issueType={issueType}
-                                    status={filteredStatus}
-                                    setUploadStatus={setUploadStatus}
-                                />
-                            </div>
-                        </>
-                    )}
-                    {/* User Upload Component */}
-                    {showUserUpload && (
+                                    {/* Logout Button (mobile) */}
+                                    <button
+                                        onClick={() => {
+                                            handleLogout();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="w-full px-4 py-3 rounded-lg transition font-raleway flex items-center justify-center
+                             bg-red-500 text-white hover:bg-red-600"
+                                    >
+                                        <FaSignOutAlt className="mr-1" />
+                                        Logout
+                                    </button>
+                                </nav>
+                            </motion.div>
+                        </div>
+                    ) : (
                         <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            className="flex-1 overflow-auto"
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className={`fixed top-0 right-0 h-full w-3/4 max-w-xs z-50
+                          bg-white/30 dark:bg-gray-800/30
+                          backdrop-blur-md border-l border-white/40 dark:border-gray-700/40
+                          shadow-xl`}
                         >
-                            <UserUpload
-                                darkMode={darkMode}
-                                selectedFile={selectedFile}
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setIsMenuOpen(false)}
+                                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 focus:outline-none"
+                            >
+                                <FaTimes className="h-6 w-6" />
+                            </button>
 
-                                uploading={uploading}
-                                uploadProgress={uploadProgress}
-                                handleFileChange={handleFileChange}
-                                handleClearFile={handleClearFile}
-                                handleUpload={handleUpload}
-                                setUploadStatus={setUploadStatus}
-                            />
+                            {/* Mobile Navigation Links */}
+                            <nav className="mt-16 p-6 space-y-4">
+                                <Link
+                                    to="/admin-dashboard"
+                                    onClick={() => {
+                                        handleHomeButtonClick();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className={`block px-4 py-3 rounded-lg transition font-raleway
+                              ${darkMode
+                                            ? activeTab === "dashboardHome"
+                                                ? "bg-gray-700 text-white"
+                                                : "text-gray-300 hover:bg-gray-700"
+                                            : activeTab === "dashboardHome"
+                                                ? "bg-gray-200 text-gray-900"
+                                                : "text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                >
+                                    <FaHome className="inline mr-1" />
+                                    Home
+                                </Link>
+                                <Link
+                                    to="/admin-dashboard/tickets"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className={`block px-4 py-3 rounded-lg transition font-raleway
+                              ${darkMode
+                                            ? activeTab === "tickets"
+                                                ? "bg-gray-700 text-white"
+                                                : "text-gray-300 hover:bg-gray-700"
+                                            : activeTab === "tickets"
+                                                ? "bg-gray-200 text-gray-900"
+                                                : "text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                >
+                                    <FaListAlt className="inline mr-1" />
+                                    Lists
+                                </Link>
+                                <Link
+                                    to="/admin-dashboard/addUser"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className={`block px-4 py-3 rounded-lg transition font-raleway
+                              ${darkMode
+                                            ? activeTab === "upload"
+                                                ? "bg-gray-700 text-white"
+                                                : "text-gray-300 hover:bg-gray-700"
+                                            : activeTab === "upload"
+                                                ? "bg-gray-200 text-gray-900"
+                                                : "text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                >
+                                    <FaUserPlus className="inline mr-1" />
+                                    Add User
+                                </Link>
+                                <Link
+                                    to="/admin-dashboard/ticketForm"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className={`block px-4 py-3 rounded-lg transition font-raleway
+                              ${darkMode
+                                            ? activeTab === "ticketForm"
+                                                ? "bg-gray-700 text-white"
+                                                : "text-gray-300 hover:bg-gray-700"
+                                            : activeTab === "ticketForm"
+                                                ? "bg-gray-200 text-gray-900"
+                                                : "text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                >
+                                    <FaTicketAlt className="inline mr-1" />
+                                    Ticket+
+                                </Link>
+
+                                {/* Dark Mode Toggle (mobile) */}
+                                <div className="flex items-center px-4 py-3 space-x-3 rounded-lg transition">
+                                    {darkMode ? (
+                                        <MdLightMode className="h-5 w-5 text-gray-300" />
+                                    ) : (
+                                        <MdDarkMode className="h-5 w-5 text-gray-700" />
+                                    )}
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} />
+                                        <div
+                                            className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300
+                                dark:peer-focus:ring-blue-800 rounded-full dark:bg-gray-700
+                                peer-checked:after:translate-x-full peer-checked:after:border-white
+                                after:absolute after:top-[2px] after:left-[2px] after:bg-white
+                                after:border-gray-300 after:border after:rounded-full
+                                after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}
+                                        />
+                                    </label>
+                                </div>
+
+                                {/* Logout Button (mobile) */}
+                                <button
+                                    onClick={() => {
+                                        handleLogout();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="w-full px-4 py-3 rounded-lg transition font-raleway flex items-center justify-center
+                             bg-red-500 text-white hover:bg-red-600"
+                                >
+                                    <FaSignOutAlt className="mr-1" />
+                                    Logout
+                                </button>
+                            </nav>
                         </motion.div>
                     )}
-                    {showTicketForm && (
-                        <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            className="flex-1 overflow-auto"
+                </>
+            )}
+
+            {/* FIXED FILTER SECTION */}
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className={`fixed top-16 z-20 w-full left-0 px-4 sm:px-6 py-3
+                    flex items-center gap-2 flex-nowrap
+                    rounded-b-lg shadow-lg
+                    ${darkMode ? "bg-gray-800 text-white" : "bg-white"}`}
+            >
+                <input
+                    type="text"
+                    placeholder="Search tickets..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`flex-1 min-w-0 px-2 py-2 border rounded-lg
+                      focus:ring-2 focus:ring-blue-500 text-sm
+                      ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900"}`}
+                />
+                <select
+                    value={issueType}
+                    onChange={(e) => setIssueType(e.target.value)}
+                    className={`flex-none px-2 py-2 border rounded-lg
+                      focus:ring-2 focus:ring-blue-500 text-sm
+                      ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900"}`}
+                >
+                    <option value="">All Issues</option>
+                    {availableIssueTypes.map((type) => (
+                        <option key={type} value={type}>
+                            {type}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    onClick={handleResetFilters}
+                    className={`flex-none px-3 py-2 rounded-lg
+                      transition-colors text-sm
+                      ${darkMode ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-500 text-white hover:bg-gray-600"}`}
+                >
+                    Reset
+                </button>
+            </motion.div>
+
+            {/* MAIN CONTENT */}
+            <main className="pt-28 px-4 sm:px-6 flex-1 overflow-y-auto">
+                {location.pathname === "/admin-dashboard" && (
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+                    >
+                        <div className={`rounded-2xl font-raleway p-4 flex flex-col items-start ${darkMode ? "text-white" : "text-gray-700"}`}>
+                            <div className="text-lg font-semibold mb-1">
+                                Total Tickets <FaTicketAlt className="inline ml-1" />
+                            </div>
+                            <div className="text-4xl font-bold">{totalTickets}</div>
+                        </div>
+                        <div
+                            onClick={() => handleStatisticCardClick("Open")}
+                            className={`rounded-2xl font-raleway shadow-md p-4 flex flex-col items-start ${getStatusColor("Open")} cursor-pointer`}
                         >
-                            <TicketForm
-                            />
-                        </motion.div>
-                    )}
+                            <div className="text-lg font-semibold mb-1">
+                                Open <FaEnvelopeOpenText className="inline ml-1 animate-pulse" />
+                            </div>
+                            <div className={`text-4xl font-bold ${getNumberColor("Open")}`}>{openTickets}</div>
+                        </div>
+                        <div
+                            onClick={() => handleStatisticCardClick("In Progress")}
+                            className={`rounded-2xl font-raleway shadow-md p-4 flex flex-col items-start ${getStatusColor("In Progress")} cursor-pointer`}
+                        >
+                            <div className="text-lg font-semibold mb-1">
+                                In Progress <FaCircleNotch className="inline ml-1 animate-spin" />
+                            </div>
+                            <div className={`text-4xl font-bold ${getNumberColor("In Progress")}`}>{inProgressTickets}</div>
+                        </div>
+                        <div
+                            onClick={() => handleStatisticCardClick("Resolved")}
+                            className={`rounded-2xl font-raleway shadow-md p-4 flex flex-col items-start ${getStatusColor("Resolved")} cursor-pointer`}
+                        >
+                            <div className="text-lg font-semibold mb-1">
+                                Resolved <FaThumbsUp className="inline ml-1 animate-bounce" />
+                            </div>
+                            <div className={`text-4xl font-bold ${getNumberColor("Resolved")}`}>{resolvedTickets}</div>
+                        </div>
+                    </motion.div>
+                )}
 
-
-                </main>
-            </div>
-        </AdminRouteGuard>
+                {location.pathname.includes("/admin-dashboard/tickets") && (
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="overflow-auto">
+                        <TicketList darkMode={darkMode} searchQuery={searchQuery} issueType={issueType} status={filteredStatus} setUploadStatus={setUploadStatus} />
+                    </motion.div>
+                )}
+                {location.pathname.includes("/admin-dashboard/addUser") && (
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="overflow-auto">
+                        <UserUpload
+                            darkMode={darkMode}
+                            selectedFile={selectedFile}
+                            uploading={uploading}
+                            uploadProgress={uploadProgress}
+                            handleFileChange={handleFileChange}
+                            handleClearFile={handleClearFile}
+                            handleUpload={handleUpload}
+                            setUploadStatus={setUploadStatus}
+                        />
+                    </motion.div>
+                )}
+                {location.pathname.includes("/admin-dashboard/ticketForm") && (
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="overflow-auto">
+                        <TicketForm darkMode={darkMode} />
+                    </motion.div>
+                )}
+            </main>
+        </div>
     );
 };
 
@@ -614,24 +796,19 @@ AdminDashboard.propTypes = {
     navigate: PropTypes.func,
     uploadStatus: PropTypes.shape({
         message: PropTypes.string,
-        type: PropTypes.string,
+        type: PropTypes.string
     }),
     darkMode: PropTypes.bool,
-    showTickets: PropTypes.bool,
+    location: PropTypes.object,
     isMenuOpen: PropTypes.bool,
     activeTab: PropTypes.string,
-    showUserUpload: PropTypes.bool,
-    showTicketForm: PropTypes.bool,
     tickets: PropTypes.array,
     selectedFile: PropTypes.object,
     uploading: PropTypes.bool,
-    uploadProgress: PropTypes.number,
+    uploadProgress: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     filteredStatus: PropTypes.string,
     handleLogout: PropTypes.func,
     toggleDarkMode: PropTypes.func,
-    handleTicketsLinkClick: PropTypes.func,
-    handleUserUploadClick: PropTypes.func,
-    handleTicketFormClick: PropTypes.func,
     handleFileChange: PropTypes.func,
     handleClearFile: PropTypes.func,
     handleUpload: PropTypes.func,
@@ -643,14 +820,704 @@ AdminDashboard.propTypes = {
     ]),
     searchQuery: PropTypes.string,
     issueType: PropTypes.string,
-    totalTickets: PropTypes.number, // add totalTickets
-    openTickets: PropTypes.number, // add openTickets
-    inProgressTickets: PropTypes.number, // add inProgressTickets
-    resolvedTickets: PropTypes.number, // add resolvedTickets
+    totalTickets: PropTypes.number,
+    openTickets: PropTypes.number,
+    inProgressTickets: PropTypes.number,
+    resolvedTickets: PropTypes.number,
     isDbConnected: PropTypes.bool,
     isCheckingConnection: PropTypes.bool,
     availableIssueTypes: PropTypes.arrayOf(PropTypes.string),
-    setUploadStatus: PropTypes.func,
+    setUploadStatus: PropTypes.func
 };
 
 export default AdminDashboard;
+
+
+
+// // frontend/src/components/AdminDashboard.jsx
+// import { useState, useEffect, useRef } from "react";
+// import { useNavigate, Link, useLocation } from "react-router-dom";
+// import TicketList from "./TicketList";
+// import UserUpload from "./UserUpload";
+// import TicketForm from "./TicketForm";
+// import axios from "axios";
+// import { motion } from "framer-motion";
+// import {
+//   FaCheckCircle,
+//   FaExclamationCircle,
+//   FaBars,
+//   FaTimes,
+//   FaHome,
+//   FaTicketAlt,
+//   FaSignOutAlt,
+//   FaEnvelopeOpenText,
+//   FaCircleNotch,
+//   FaThumbsUp,
+//   FaListAlt,
+//   FaUserPlus,
+//   FaSync
+// } from "react-icons/fa";
+// import { MdDarkMode, MdLightMode } from "react-icons/md";
+// import PropTypes from "prop-types";
+// // import RefreshIcon from "@mui/icons-material/Refresh";
+// import { IconButton } from "@mui/material";
+
+// const AdminDashboard = () => {
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const [uploadStatus, setUploadStatus] = useState({ message: "", type: "", source: "" });
+//   const [darkMode, setDarkMode] = useState(false);
+//   const [isMenuOpen, setIsMenuOpen] = useState(false);
+//   const [tickets, setTickets] = useState([]);
+//   const [selectedFile, setSelectedFile] = useState(null);
+//   const [uploading, setUploading] = useState(false);
+//   const [uploadProgress, setUploadProgress] = useState(0);
+//   const [filteredStatus, setFilteredStatus] = useState(null);
+//   const homeButtonRef = useRef(null);
+//   const [isDbConnected, setIsDbConnected] = useState(false);
+//   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [issueType, setIssueType] = useState("");
+//   const [availableIssueTypes, setAvailableIssueTypes] = useState([]);
+
+//   // Focus home button on mount
+//   useEffect(() => {
+//     if (homeButtonRef.current) {
+//       homeButtonRef.current.focus();
+//     }
+//   }, []);
+
+//   // Determine active tab based on route
+//   const getActiveTab = () => {
+//     if (location.pathname.includes("tickets")) return "tickets";
+//     if (location.pathname.includes("addUser")) return "upload";
+//     if (location.pathname.includes("ticketForm")) return "ticketForm";
+//     return "dashboardHome";
+//   };
+//   const [activeTab, setActiveTab] = useState(getActiveTab());
+//   useEffect(() => {
+//     setActiveTab(getActiveTab());
+//   }, [location.pathname]);
+
+//   const handleLogout = () => {
+//     localStorage.removeItem("adminLoggedIn");
+//     navigate("/");
+//   };
+
+//   // Check database connection
+//   const checkDbConnection = async () => {
+//     setIsCheckingConnection(true);
+//     try {
+//       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/db-check`);
+//       if (response && response.status === 200) {
+//         setIsDbConnected(true);
+//         setUploadStatus({ message: "Connected!", type: "success", source: "db" });
+//         setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+//       } else {
+//         setIsDbConnected(false);
+//         setUploadStatus({ message: "Failed to connect", type: "error", source: "db" });
+//         setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+//       }
+//     } catch (error) {
+//       setIsDbConnected(false);
+//       console.error("Error checking database connection:", error);
+//       setUploadStatus({ message: "Not Connected!", type: "error", source: "db" });
+//       setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+//     } finally {
+//       setIsCheckingConnection(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     checkDbConnection();
+//   }, []);
+
+//   const toggleDarkMode = () => {
+//     setDarkMode(!darkMode);
+//   };
+
+//   const handleHomeButtonClick = () => {
+//     navigate("/admin-dashboard");
+//     setFilteredStatus(null);
+//     setIsMenuOpen(false);
+//   };
+
+//   const handleFileChange = (event) => {
+//     if (event.target.files && event.target.files.length > 0) {
+//       setSelectedFile(event.target.files[0]);
+//     }
+//   };
+
+//   const handleClearFile = () => {
+//     setSelectedFile(null);
+//   };
+
+//   const handleUpload = async () => {
+//     if (!selectedFile) {
+//       setUploadStatus({ message: "Please select a file.", type: "error", source: "userUpload" });
+//       return;
+//     }
+//     setUploading(true);
+//     const formData = new FormData();
+//     formData.append("file", selectedFile);
+
+//     try {
+//       const response = await axios.post(
+//         `${import.meta.env.VITE_BACKEND_URL}/api/user/upload-users`,
+//         formData,
+//         {
+//           headers: { "Content-Type": "multipart/form-data" },
+//           onUploadProgress: (progressEvent) => {
+//             const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+//             setUploadProgress(progress);
+//           }
+//         }
+//       );
+//       if (response.data.success) {
+//         setUploadStatus({ message: response.data.message, type: "success", source: "userUpload" });
+//         setSelectedFile(null);
+//         setUploadProgress(0);
+//         setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+//       } else {
+//         throw new Error(response.data.message);
+//       }
+//     } catch (error) {
+//       setUploadStatus({
+//         message: error.response?.data?.message || "Error uploading file. Please try again.",
+//         type: "error",
+//         source: "userUpload"
+//       });
+//       setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+//     } finally {
+//       setUploading(false);
+//     }
+//   };
+
+//   // Framer Motion container variants for transitions
+//   const containerVariants = {
+//     hidden: { opacity: 0 },
+//     visible: { opacity: 1, transition: { duration: 0.5 } }
+//   };
+
+//   // Status badge colors
+//   const getStatusColor = (status) => {
+//     switch (status) {
+//       case "Total":
+//         return `bg-gray-100 text-gray-700 ${darkMode ? "dark:bg-gray-800 dark:text-gray-300" : ""}`;
+//       case "Open":
+//         return `bg-blue-100 text-blue-800 ${darkMode ? "dark:bg-blue-900 dark:text-blue-100" : ""}`;
+//       case "In Progress":
+//         return `bg-orange-100 text-orange-800 ${darkMode ? "dark:bg-orange-900 dark:text-orange-100" : ""}`;
+//       case "Resolved":
+//         return `bg-green-100 text-green-800 ${darkMode ? "dark:bg-green-900 dark:text-green-100" : ""}`;
+//       default:
+//         return `bg-gray-100 text-gray-800 ${darkMode ? "dark:bg-gray-700 dark:text-gray-100" : ""}`;
+//     }
+//   };
+
+//   const getNumberColor = (status) => {
+//     switch (status) {
+//       case "Open":
+//         return `text-blue-800 ${darkMode ? "dark:bg-blue-900 dark:text-blue-100" : ""}`;
+//       case "In Progress":
+//         return `text-orange-800 ${darkMode ? "dark:bg-orange-900 dark:text-orange-100" : ""}`;
+//       case "Resolved":
+//         return `text-green-800 ${darkMode ? "dark:bg-green-900 dark:text-green-100" : ""}`;
+//       default:
+//         return "";
+//     }
+//   };
+
+//   // Fetch tickets and issue types on mount
+//   useEffect(() => {
+//     const fetchAllTickets = async () => {
+//       try {
+//         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`);
+//         setTickets(response?.data || []);
+//       } catch (error) {
+//         console.error("Error fetching tickets:", error);
+//         setTickets([]);
+//       }
+//     };
+
+//     const fetchIssueTypes = async () => {
+//       try {
+//         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/issue-types`);
+//         setAvailableIssueTypes(response?.data || []);
+//       } catch (error) {
+//         console.error("Error fetching issue types:", error);
+//         setAvailableIssueTypes([]);
+//       }
+//     };
+
+//     fetchAllTickets();
+//     fetchIssueTypes();
+//   }, []);
+
+//   const totalTickets = tickets.length;
+//   const openTickets = tickets.filter((ticket) => ticket.status === "Open").length;
+//   const inProgressTickets = tickets.filter((ticket) => ticket.status === "In Progress").length;
+//   const resolvedTickets = tickets.filter((ticket) => ticket.status === "Resolved").length;
+
+//   // Fetch tickets based on filters
+//   const fetchTickets = async () => {
+//     try {
+//       let url = `${import.meta.env.VITE_BACKEND_URL}/api/admin/tickets`;
+//       const params = new URLSearchParams();
+//       if (issueType) params.append("issue_type", issueType);
+//       if (filteredStatus) params.append("status", filteredStatus);
+//       if (params.toString()) url += `?${params.toString()}`;
+//       const response = await axios.get(url);
+//       setTickets(response?.data || []);
+//     } catch (error) {
+//       console.error("Error fetching tickets:", error);
+//       setTickets([]);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchTickets();
+//   }, [issueType, filteredStatus]);
+
+//   const handleStatisticCardClick = (status) => {
+//     navigate("/admin-dashboard/tickets");
+//     setFilteredStatus(status);
+//   };
+
+//   const handleResetFilters = () => {
+//     setIssueType("");
+//     setSearchQuery("");
+//     setFilteredStatus(null);
+//   };
+
+//   return (
+//     <div className={`font min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"} flex flex-col`}>
+//       {/* FIXED TOP HEADER */}
+//       <header
+//         className={`sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6
+//                     ${darkMode ? "bg-gray-800" : "bg-white"} shadow`}
+//       >
+//         <div className="flex items-center">
+//           <h1 className="font-raleway text-2xl sm:text-3xl font-bold mr-2">
+//             Dashboard
+//           </h1>
+//           <IconButton
+//             onClick={checkDbConnection}
+//             disabled={isCheckingConnection}
+//             className={`p-2 rounded-full transition-colors
+//                         ${isDbConnected ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}
+//                         ${darkMode ? "text-white" : "text-gray-700"}`}
+//             title={isDbConnected ? "Database Connected" : "Connect to Database"}
+//             aria-label={isDbConnected ? "Database Connected" : "Connect to Database"}
+//           >
+//             <FaSync
+//             style={{ fontSize: "16px" }}
+//               className={`${isCheckingConnection ? " animate-pulse" : ""}
+//                           ${darkMode ? "text-white hover:text-green-300" : "text-gray-700 hover:text-green-800"}`}
+//             />
+//           </IconButton>
+//           {uploadStatus.message && uploadStatus.source === "db" && (
+//             <motion.div
+//               initial={{ opacity: 0, y: -20 }}
+//               animate={{ opacity: 1, y: 0 }}
+//               transition={{ duration: 0.3 }}
+//               className={`ml-2 flex items-center px-3 py-1 rounded-md text-sm font-medium
+//                          ${uploadStatus.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+//             >
+//               {uploadStatus.type === "success" ? <FaCheckCircle className="mr-2" /> : <FaExclamationCircle className="mr-2" />}
+//               {uploadStatus.message}
+//             </motion.div>
+//           )}
+//         </div>
+
+//         {/* DESKTOP NAVIGATION */}
+//         <div className="hidden sm:flex items-center space-x-4">
+//           <Link
+//             to="/admin-dashboard"
+//             onClick={handleHomeButtonClick}
+//             ref={homeButtonRef}
+//             className={`px-3 py-1 rounded-lg transition font-raleway
+//                         ${darkMode
+//                           ? activeTab === "dashboardHome"
+//                             ? "bg-gray-700 text-white"
+//                             : "text-gray-300 hover:bg-gray-700"
+//                           : activeTab === "dashboardHome"
+//                           ? "bg-gray-200 text-gray-900"
+//                           : "text-gray-700 hover:bg-gray-200"
+//                         }`}
+//           >
+//             <FaHome className="inline mr-1" />
+//             Home
+//           </Link>
+//           <Link
+//             to="/admin-dashboard/tickets"
+//             className={`px-3 py-1 rounded-lg transition font-raleway
+//                         ${darkMode
+//                           ? activeTab === "tickets"
+//                             ? "bg-gray-700 text-white"
+//                             : "text-gray-300 hover:bg-gray-700"
+//                           : activeTab === "tickets"
+//                           ? "bg-gray-200 text-gray-900"
+//                           : "text-gray-700 hover:bg-gray-200"
+//                         }`}
+//           >
+//             <FaListAlt className="inline mr-1" />
+//             Lists
+//           </Link>
+//           <Link
+//             to="/admin-dashboard/addUser"
+//             className={`px-3 py-1 rounded-lg transition font-raleway
+//                         ${darkMode
+//                           ? activeTab === "upload"
+//                             ? "bg-gray-700 text-white"
+//                             : "text-gray-300 hover:bg-gray-700"
+//                           : activeTab === "upload"
+//                           ? "bg-gray-200 text-gray-900"
+//                           : "text-gray-700 hover:bg-gray-200"
+//                         }`}
+//           >
+//             <FaUserPlus className="inline mr-1" />
+//             Add User
+//           </Link>
+//           <Link
+//             to="/admin-dashboard/ticketForm"
+//             className={`px-3 py-1 rounded-lg transition font-raleway
+//                         ${darkMode
+//                           ? activeTab === "ticketForm"
+//                             ? "bg-gray-700 text-white"
+//                             : "text-gray-300 hover:bg-gray-700"
+//                           : activeTab === "ticketForm"
+//                           ? "bg-gray-200 text-gray-900"
+//                           : "text-gray-700 hover:bg-gray-200"
+//                         }`}
+//           >
+//             <FaTicketAlt className="inline mr-1" />
+//             Ticket+
+//           </Link>
+//           <div className="flex items-center">
+//             {darkMode ? <MdLightMode className="mr-2 h-5 w-5 text-gray-300" /> : <MdDarkMode className="mr-2 h-5 w-5 text-gray-700" />}
+//             <label className="relative inline-flex items-center cursor-pointer">
+//               <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} />
+//               <div
+//                 className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300
+//                             dark:peer-focus:ring-blue-800 rounded-full dark:bg-gray-700
+//                             peer-checked:after:translate-x-full peer-checked:after:border-white
+//                             after:absolute after:top-[2px] after:left-[2px] after:bg-white
+//                             after:border-gray-300 after:border after:rounded-full
+//                             after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}
+//               />
+//             </label>
+//           </div>
+//           <button
+//             onClick={handleLogout}
+//             className={`px-3 py-1 rounded-lg transition font-raleway flex items-center
+//                         ${darkMode ? "bg-red-600 hover:bg-red-700" : "bg-red-500 hover:bg-red-600"}
+//                         text-white`}
+//           >
+//             <FaSignOutAlt className="mr-1" />
+//             Logout
+//           </button>
+//         </div>
+
+//         {/* MOBILE: Hamburger Button */}
+//         <button
+//           onClick={() => setIsMenuOpen(true)}
+//           className="sm:hidden flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+//         >
+//           <FaBars className="h-6 w-6" />
+//         </button>
+//       </header>
+
+//       {/* MOBILE MENU OVERLAY WITH GLASSMORPHISM */}
+//       {isMenuOpen && (
+//         <>
+//           {/* Backdrop */}
+//           <motion.div
+//             initial={{ opacity: 0 }}
+//             animate={{ opacity: 1 }}
+//             exit={{ opacity: 0 }}
+//             className="fixed inset-0 bg-black bg-opacity-40 z-40"
+//             onClick={() => setIsMenuOpen(false)}
+//           />
+//           {/* Slide-Out Menu */}
+//           <motion.div
+//             initial={{ x: "100%" }}
+//             animate={{ x: 0 }}
+//             exit={{ x: "100%" }}
+//             transition={{ type: "spring", stiffness: 300, damping: 30 }}
+//             className={`fixed top-0 right-0 h-full w-3/4 max-w-xs z-50
+//                         bg-white/30 dark:bg-gray-800/30
+//                         backdrop-blur-md border-l border-white/40 dark:border-gray-700/40
+//                         shadow-xl`}
+//           >
+//             {/* Close Button */}
+//             <button
+//               onClick={() => setIsMenuOpen(false)}
+//               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 focus:outline-none"
+//             >
+//               <FaTimes className="h-6 w-6" />
+//             </button>
+
+//             {/* Mobile Navigation Links */}
+//             <nav className="mt-16 p-6 space-y-4">
+//               <Link
+//                 to="/admin-dashboard"
+//                 onClick={() => {
+//                   handleHomeButtonClick();
+//                   setIsMenuOpen(false);
+//                 }}
+//                 className={`block px-4 py-3 rounded-lg transition font-raleway
+//                             ${darkMode
+//                               ? activeTab === "dashboardHome"
+//                                 ? "bg-gray-700 text-white"
+//                                 : "text-gray-300 hover:bg-gray-700"
+//                               : activeTab === "dashboardHome"
+//                               ? "bg-gray-200 text-gray-900"
+//                               : "text-gray-700 hover:bg-gray-200"
+//                             }`}
+//               >
+//                 <FaHome className="inline mr-1" />
+//                 Home
+//               </Link>
+//               <Link
+//                 to="/admin-dashboard/tickets"
+//                 onClick={() => setIsMenuOpen(false)}
+//                 className={`block px-4 py-3 rounded-lg transition font-raleway
+//                             ${darkMode
+//                               ? activeTab === "tickets"
+//                                 ? "bg-gray-700 text-white"
+//                                 : "text-gray-300 hover:bg-gray-700"
+//                               : activeTab === "tickets"
+//                               ? "bg-gray-200 text-gray-900"
+//                               : "text-gray-700 hover:bg-gray-200"
+//                             }`}
+//               >
+//                 <FaListAlt className="inline mr-1" />
+//                 Lists
+//               </Link>
+//               <Link
+//                 to="/admin-dashboard/addUser"
+//                 onClick={() => setIsMenuOpen(false)}
+//                 className={`block px-4 py-3 rounded-lg transition font-raleway
+//                             ${darkMode
+//                               ? activeTab === "upload"
+//                                 ? "bg-gray-700 text-white"
+//                                 : "text-gray-300 hover:bg-gray-700"
+//                               : activeTab === "upload"
+//                               ? "bg-gray-200 text-gray-900"
+//                               : "text-gray-700 hover:bg-gray-200"
+//                             }`}
+//               >
+//                 <FaUserPlus className="inline mr-1" />
+//                 Add User
+//               </Link>
+//               <Link
+//                 to="/admin-dashboard/ticketForm"
+//                 onClick={() => setIsMenuOpen(false)}
+//                 className={`block px-4 py-3 rounded-lg transition font-raleway
+//                             ${darkMode
+//                               ? activeTab === "ticketForm"
+//                                 ? "bg-gray-700 text-white"
+//                                 : "text-gray-300 hover:bg-gray-700"
+//                               : activeTab === "ticketForm"
+//                               ? "bg-gray-200 text-gray-900"
+//                               : "text-gray-700 hover:bg-gray-200"
+//                             }`}
+//               >
+//                 <FaTicketAlt className="inline mr-1" />
+//                 Ticket+
+//               </Link>
+
+//               {/* Dark Mode Toggle (mobile) */}
+//               <div className="flex items-center px-4 py-3 space-x-3 rounded-lg transition">
+//                 {darkMode ? (
+//                   <MdLightMode className="h-5 w-5 text-gray-300" />
+//                 ) : (
+//                   <MdDarkMode className="h-5 w-5 text-gray-700" />
+//                 )}
+//                 <label className="relative inline-flex items-center cursor-pointer">
+//                   <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} />
+//                   <div
+//                     className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300
+//                                 dark:peer-focus:ring-blue-800 rounded-full dark:bg-gray-700
+//                                 peer-checked:after:translate-x-full peer-checked:after:border-white
+//                                 after:absolute after:top-[2px] after:left-[2px] after:bg-white
+//                                 after:border-gray-300 after:border after:rounded-full
+//                                 after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}
+//                   />
+//                 </label>
+//               </div>
+
+//               {/* Logout Button (mobile) */}
+//               <button
+//                 onClick={() => {
+//                   handleLogout();
+//                   setIsMenuOpen(false);
+//                 }}
+//                 className="w-full px-4 py-3 rounded-lg transition font-raleway flex items-center justify-center
+//                            bg-red-500 text-white hover:bg-red-600"
+//               >
+//                 <FaSignOutAlt className="mr-1" />
+//                 Logout
+//               </button>
+//             </nav>
+//           </motion.div>
+//         </>
+//       )}
+
+//       {/* FIXED FILTER SECTION */}
+//       <motion.div
+//         variants={containerVariants}
+//         initial="hidden"
+//         animate="visible"
+//         className={`fixed top-16 z-20 w-full left-0 px-4 sm:px-6 py-3
+//                     flex items-center gap-2 flex-nowrap
+//                     rounded-b-lg shadow-lg
+//                     ${darkMode ? "bg-gray-800 text-white" : "bg-white"}`}
+//       >
+//         <input
+//           type="text"
+//           placeholder="Search tickets..."
+//           value={searchQuery}
+//           onChange={(e) => setSearchQuery(e.target.value)}
+//           className={`flex-1 min-w-0 px-2 py-2 border rounded-lg
+//                       focus:ring-2 focus:ring-blue-500 text-sm
+//                       ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900"}`}
+//         />
+//         <select
+//           value={issueType}
+//           onChange={(e) => setIssueType(e.target.value)}
+//           className={`flex-none px-2 py-2 border rounded-lg
+//                       focus:ring-2 focus:ring-blue-500 text-sm
+//                       ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900"}`}
+//         >
+//           <option value="">All Issues</option>
+//           {availableIssueTypes.map((type) => (
+//             <option key={type} value={type}>
+//               {type}
+//             </option>
+//           ))}
+//         </select>
+//         <button
+//           onClick={handleResetFilters}
+//           className={`flex-none px-3 py-2 rounded-lg
+//                       transition-colors text-sm
+//                       ${darkMode ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-500 text-white hover:bg-gray-600"}`}
+//         >
+//           Reset
+//         </button>
+//       </motion.div>
+
+//       {/* MAIN CONTENT */}
+//       <main className="pt-28 px-4 sm:px-6 flex-1 overflow-y-auto">
+//         {location.pathname === "/admin-dashboard" && (
+//           <motion.div
+//             variants={containerVariants}
+//             initial="hidden"
+//             animate="visible"
+//             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+//           >
+//             <div className={`rounded-2xl p-4 flex flex-col items-start ${darkMode ? "text-white" : "text-gray-700"}`}>
+//               <div className="text-lg font-semibold mb-1">
+//                 Total Tickets <FaTicketAlt className="inline ml-1" />
+//               </div>
+//               <div className="text-4xl font-bold">{totalTickets}</div>
+//             </div>
+//             <div
+//               onClick={() => handleStatisticCardClick("Open")}
+//               className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor("Open")} cursor-pointer`}
+//             >
+//               <div className="text-lg font-semibold mb-1">
+//                 Open <FaEnvelopeOpenText className="inline ml-1 animate-pulse" />
+//               </div>
+//               <div className={`text-4xl font-bold ${getNumberColor("Open")}`}>{openTickets}</div>
+//             </div>
+//             <div
+//               onClick={() => handleStatisticCardClick("In Progress")}
+//               className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor("In Progress")} cursor-pointer`}
+//             >
+//               <div className="text-lg font-semibold mb-1">
+//                 In Progress <FaCircleNotch className="inline ml-1 animate-spin" />
+//               </div>
+//               <div className={`text-4xl font-bold ${getNumberColor("In Progress")}`}>{inProgressTickets}</div>
+//             </div>
+//             <div
+//               onClick={() => handleStatisticCardClick("Resolved")}
+//               className={`rounded-2xl shadow-md p-4 flex flex-col items-start ${getStatusColor("Resolved")} cursor-pointer`}
+//             >
+//               <div className="text-lg font-semibold mb-1">
+//                 Resolved <FaThumbsUp className="inline ml-1 animate-bounce" />
+//               </div>
+//               <div className={`text-4xl font-bold ${getNumberColor("Resolved")}`}>{resolvedTickets}</div>
+//             </div>
+//           </motion.div>
+//         )}
+
+//         {location.pathname.includes("/admin-dashboard/tickets") && (
+//           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="overflow-auto">
+//             <TicketList darkMode={darkMode} searchQuery={searchQuery} issueType={issueType} status={filteredStatus} setUploadStatus={setUploadStatus} />
+//           </motion.div>
+//         )}
+//         {location.pathname.includes("/admin-dashboard/addUser") && (
+//           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="overflow-auto">
+//             <UserUpload
+//               darkMode={darkMode}
+//               selectedFile={selectedFile}
+//               uploading={uploading}
+//               uploadProgress={uploadProgress}
+//               handleFileChange={handleFileChange}
+//               handleClearFile={handleClearFile}
+//               handleUpload={handleUpload}
+//               setUploadStatus={setUploadStatus}
+//             />
+//           </motion.div>
+//         )}
+//         {location.pathname.includes("/admin-dashboard/ticketForm") && (
+//           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="overflow-auto">
+//             <TicketForm darkMode={darkMode} />
+//           </motion.div>
+//         )}
+//       </main>
+//     </div>
+//   );
+// };
+
+// AdminDashboard.propTypes = {
+//   navigate: PropTypes.func,
+//   uploadStatus: PropTypes.shape({
+//     message: PropTypes.string,
+//     type: PropTypes.string
+//   }),
+//   darkMode: PropTypes.bool,
+//   location: PropTypes.object,
+//   isMenuOpen: PropTypes.bool,
+//   activeTab: PropTypes.string,
+//   tickets: PropTypes.array,
+//   selectedFile: PropTypes.object,
+//   uploading: PropTypes.bool,
+//   uploadProgress: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+//   filteredStatus: PropTypes.string,
+//   handleLogout: PropTypes.func,
+//   toggleDarkMode: PropTypes.func,
+//   handleFileChange: PropTypes.func,
+//   handleClearFile: PropTypes.func,
+//   handleUpload: PropTypes.func,
+//   getStatusColor: PropTypes.func,
+//   getNumberColor: PropTypes.func,
+//   homeButtonRef: PropTypes.oneOfType([
+//     PropTypes.func,
+//     PropTypes.shape({ current: PropTypes.instanceOf(Element) })
+//   ]),
+//   searchQuery: PropTypes.string,
+//   issueType: PropTypes.string,
+//   totalTickets: PropTypes.number,
+//   openTickets: PropTypes.number,
+//   inProgressTickets: PropTypes.number,
+//   resolvedTickets: PropTypes.number,
+//   isDbConnected: PropTypes.bool,
+//   isCheckingConnection: PropTypes.bool,
+//   availableIssueTypes: PropTypes.arrayOf(PropTypes.string),
+//   setUploadStatus: PropTypes.func
+// };
+
+// export default AdminDashboard;

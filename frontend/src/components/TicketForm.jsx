@@ -1,11 +1,13 @@
+// frontend/src/components/TicketForm.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { FaChevronDown } from "react-icons/fa";
 import "../../src/App.css";
 import "../../src/index.css";
 import { motion } from 'framer-motion';
+import PropTypes from 'prop-types';
 
-const TicketForm = () => {
+const TicketForm = ({ darkMode }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [formData, setFormData] = useState({
         user_id: "",
@@ -120,7 +122,7 @@ const TicketForm = () => {
     };
 
     return (
-        <div className="font-raleway max-w-md mx-auto mt-0 p-2 bg-white rounded-2xl shadow-lg">
+        <div className={`font-raleway max-w-md mx-auto mt-0 p-2 rounded-2xl shadow-lg ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-700"}`}>
 
             {/* Timestamp */}
             <div className="font-raleway font-semibold mb-1 flex text-center justify-between shadow-sm p-1 rounded-md sp">
@@ -166,7 +168,7 @@ const TicketForm = () => {
 
                     {/* User ID block */}
                     <div>
-                        <label className=" text-gray-700 text-sm font-bold ">User ID <span className="text-red-600 font-bold">*</span>
+                        <label className={`text-sm font-bold  ${darkMode ? "text-white" : "text-gray-700"}`}>User ID <span className="text-red-600 font-bold">*</span>
                         </label>
                         <input
                             type="text"
@@ -174,7 +176,7 @@ const TicketForm = () => {
                             placeholder="Enter User ID"
                             value={formData.user_id}
                             onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 mt-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className={`shadow appearance-none border rounded w-full py-2 px-3 mt-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
                         />
                         {errors.user_id && (
                             <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
@@ -182,7 +184,7 @@ const TicketForm = () => {
                     </div>
                     {/* Mobile number block */}
                     <div>
-                        <label className=" text-gray-700 text-sm font-bold ">Mobile Number
+                        <label className={`text-sm font-bold  ${darkMode ? "text-white" : "text-gray-700"}`}>Mobile Number
                             {/* <span className="text-red-600 font-bold">*</span> */}
                         </label>
                         <input
@@ -191,7 +193,7 @@ const TicketForm = () => {
                             placeholder="Enter registered #No."
                             value={formData.mobile_number}
                             onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 mt-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className={`shadow appearance-none border rounded w-full py-2 px-3 mt-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
                             pattern="\d{10}"
                         />
                         {errors.mobile_number && (
@@ -201,13 +203,13 @@ const TicketForm = () => {
                 </div>
 
                 <div>
-                    <label className="block text-gray-700 text-sm font-bold mb-0 py-2">Address <span className="text-red-600 font-bold">*</span></label>
+                    <label className={`block text-gray-700 text-sm font-bold mb-0 py-2 ${darkMode ? "text-white" : "text-gray-700"}`}>Address <span className="text-red-600 font-bold">*</span></label>
                     <textarea
                         name="location"
                         placeholder="Enter full address"
                         value={formData.location}
                         onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
                         rows="2"
                     ></textarea>
                     {errors.location && (
@@ -216,9 +218,9 @@ const TicketForm = () => {
                 </div>
 
                 <div>
-                    <label className="block text-gray-700 text-sm font-bold mb-0 py-2">Issue Type <span className="text-red-600 font-bold">*</span></label>
+                    <label className={`block text-gray-700 text-sm font-bold mb-0 py-2 ${darkMode ? "text-white" : "text-gray-700"}`}>Issue Type <span className="text-red-600 font-bold">*</span></label>
                     <div className="relative" onClick={() => setShowDropdown(!showDropdown)}>
-                        <div className="flex items-center shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer">
+                        <div className={`flex items-center shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer ${darkMode ? "bg-gray-700 text-white" : ""}`}>
                             {formData.issue_type || "Select Issue Type"}
                             <FaChevronDown
                                 className={`ml-auto transform transition-transform duration-300 ${showDropdown ? "rotate-180" : "rotate-0"
@@ -246,26 +248,30 @@ const TicketForm = () => {
 
                 <div>
 
-                    <label className="block text-gray-700 text-sm font-bold mb-1 py-2">Description <span className="text-gray-400 font-extralight">(optional)</span></label>
+                    <label className={`block text-gray-700 text-sm font-bold mb-1 py-2 ${darkMode ? "text-white" : ""}`}>Description <span className="text-gray-400 font-extralight">(optional)</span></label>
                     <textarea
                         name="comments"
                         placeholder="Enter issue details"
                         value={formData.comments}
                         onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
                         rows="4"
                     ></textarea>
                 </div>
 
                 <button
                     type="submit"
-                    className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300"
+                    className={`w-full  text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-500 hover:bg-blue-700"}`}
                 >
                     Submit Ticket
                 </button>
             </form>
         </div>
     );
+};
+
+TicketForm.propTypes = {
+    darkMode: PropTypes.bool
 };
 
 export default TicketForm;

@@ -7,6 +7,8 @@ import { useState } from 'react';
 import axios from 'axios';
 
 const UserUpload = ({ darkMode, selectedFile, uploading, uploadProgress, handleFileChange, handleClearFile, handleUpload, setUploadStatus }) => {
+    console.log("darkMode inside UserUpload:", darkMode); {/* ADD THIS */}
+
     const [manualUserId, setManualUserId] = useState('');
     const [manualMobileNo, setManualMobileNo] = useState('');
 
@@ -22,12 +24,12 @@ const UserUpload = ({ darkMode, selectedFile, uploading, uploadProgress, handleF
         e.preventDefault();
 
         if (!manualUserId || !manualMobileNo) {
-            setUploadStatus({ message: "Please fill in all fields.", type: "error" });
+            setUploadStatus({ message: "Please fill in all fields.", type: "error", source: "userUpload" });
             return;
         }
 
         if (!/^\d{10}$/.test(manualMobileNo)) {
-            setUploadStatus({ message: "Please enter a valid 10-digit mobile number.", type: "error" });
+            setUploadStatus({ message: "Please enter a valid 10-digit mobile number.", type: "error", source: "userUpload" });
             return;
         }
 
@@ -38,7 +40,7 @@ const UserUpload = ({ darkMode, selectedFile, uploading, uploadProgress, handleF
             });
 
             if (response.data.success) {
-                setUploadStatus({ message: response.data.message, type: "success" });
+                setUploadStatus({ message: response.data.message, type: "success", source: "userUpload" });
                 // Reset form fields after successful submission
                 setManualUserId('');
                 setManualMobileNo('');
@@ -46,9 +48,9 @@ const UserUpload = ({ darkMode, selectedFile, uploading, uploadProgress, handleF
                 throw new Error(response.data.message || "Failed to create user.");
             }
         } catch (error) {
-            setUploadStatus({ message: error.response?.data?.message || "Error creating user.", type: "error" });
+            setUploadStatus({ message: error.response?.data?.message || "Error creating user.", type: "error", source: "userUpload" });
         } finally {
-            setTimeout(() => setUploadStatus({ message: '', type: '' }), 3000);
+            setTimeout(() => setUploadStatus({ message: '', type: '', source: '' }), 3000);
         }
     };
 
@@ -174,8 +176,9 @@ const UserUpload = ({ darkMode, selectedFile, uploading, uploadProgress, handleF
 };
 
 // Prop validation
+// UserUpload.jsx
 UserUpload.propTypes = {
-    darkMode: PropTypes.bool.isRequired,
+    darkMode: PropTypes.bool,
     selectedFile: PropTypes.object,
     uploading: PropTypes.bool.isRequired,
     uploadProgress: PropTypes.number.isRequired,
@@ -185,4 +188,4 @@ UserUpload.propTypes = {
     setUploadStatus: PropTypes.func.isRequired,
 };
 
-export default UserUpload;
+export default UserUpload;  

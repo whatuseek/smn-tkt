@@ -11,6 +11,7 @@
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -22,6 +23,7 @@
     transform: translateX(0);
     opacity: 1;
   }
+
   to {
     transform: translateX(100%);
     opacity: 0;
@@ -58,10 +60,58 @@
 
 /* Global Styles */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Raleway', sans-serif;
+  /* Or your preferred font */
+  background-color: #f0f2f5;
+  /* Adjust as needed */
   margin: 0;
   padding: 0;
 }
+.neumorphic-container {
+  background-color: #f0f2f5;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow:  9px 9px 18px #b3b3b3,
+             -9px -9px 18px #ffffff;
+}
+
+.neumorphic-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 5px;
+  background: #f0f2f5;
+  box-shadow: inset 5px 5px 10px #d1d1d1,
+              inset -5px -5px 10px #ffffff;
+  outline: none; /* Remove default focus outline */
+}
+
+.neumorphic-input:focus {
+   box-shadow: inset 5px 5px 10px #d1d1d1,
+              inset -5px -5px 10px #ffffff;
+}
+
+.neumorphic-button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background: linear-gradient(to right, #4CAF50, #8BC34A); /* Example green gradient */
+  color: white;
+  cursor: pointer;
+  box-shadow: 5px 5px 10px #d1d1d1,
+             -5px -5px 10px #ffffff;
+  transition: all 0.3s ease 0s;
+}
+
+.neumorphic-button:hover {
+  box-shadow: inset 5px 5px 10px #d1d1d1,
+              inset -5px -5px 10px #ffffff;
+}
+
+/* Add any additional styles as needed */
+/* Utility Classes */
 
 .container {
   max-width: 1200px;
