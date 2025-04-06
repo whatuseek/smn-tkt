@@ -21,9 +21,9 @@ const App = () => {
         {/* Admin Dashboard with nested routes */}
         <Route path="/admin-dashboard/*" element={<AdminDashboard />}>
           <Route index element={<AdminDashboard />} />  {/* Home route - optional if dashboard itself is the home */}
-          <Route path="/admin-dashboard/tickets" element={<TicketList />} />
-          <Route path="/admin-dashboard/addUser" element={<UserUpload />} />
-          <Route path="/admin-dashboard/ticketForm" element={<TicketForm />} />
+          <Route path="tickets" element={<TicketList />} />
+          <Route path="addUser" element={<UserUpload />} />
+          <Route path="ticketForm" element={<TicketForm />} />
           {/* <Route path="*" element={<Navigate to="/admin-dashboard" />} /> */}
         </Route>
 
