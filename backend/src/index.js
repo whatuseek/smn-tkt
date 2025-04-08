@@ -21,6 +21,9 @@ connectDB();
 // Setup middleware
 setupMiddleware(app);
 
+// SERVE STATIC FILES - ADJUST THIS PATH CAREFULLY
+// app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
 // Define routes
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
@@ -29,6 +32,12 @@ app.use("/api/user", userUploadRoutes);
 app.get('/', (req, res) => {
     res.send('Hello from Ticket Server!');
 });
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+// app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+//   });
 
 
 // Error handling middleware
