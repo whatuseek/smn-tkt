@@ -5,19 +5,51 @@ import { supabaseAdmin } from '../config/supabaseClient.js'; // Import Supabase 
 
 // --- Utility Functions ---
 
+// In both backend/controllers/ticketController.js
+// AND backend/controllers/adminController.js
+
+// --- Utility Functions ---
+
+// Utility function to format timestamps in human-readable local time
 const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return 'N/A'; // Handle null or undefined input
+
     try {
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: true,
-        }).format(new Date(timestamp));
+        // 1. Create a Date object from the timestamp string (handles timezone automatically)
+        const dateObject = new Date(timestamp);
+
+        // 2. Check if the date object is valid after parsing
+        if (isNaN(dateObject.getTime())) {
+             console.error("Error parsing timestamp into valid Date object:", timestamp);
+             return 'Invalid Date';
+        }
+
+        // 3. Define formatting options for Intl.DateTimeFormat
+        const options = {
+            year: 'numeric',    // e.g., 2025
+            month: 'short',     // e.g., Apr
+            day: 'numeric',     // e.g., 19
+            hour: 'numeric',    // e.g., 5 or 17 (use hour12 below for AM/PM)
+            minute: '2-digit',  // e.g., 30
+            second: '2-digit',  // e.g., 15
+            hour12: true,       // Use AM/PM format
+            // timeZoneName: 'short' // Optional: Add timezone like PST, EST, GMT if desired
+        };
+
+        // 4. Format the date using the user's locale and the specified options.
+        //    Using 'en-US' as a base locale often gives desired month/day/year order and AM/PM.
+        //    The actual timezone conversion is based on the user's system settings.
+        return new Intl.DateTimeFormat('en-US', options).format(dateObject);
+
     } catch (e) {
+        // Catch any unexpected errors during date processing
         console.error("Error formatting timestamp:", timestamp, e);
         return 'Invalid Date';
     }
 };
+
+// --- Keep other utility functions (padZeroes, mapTicketForFrontend) and controller functions ---
+// ... rest of the code in each controller file ...
 
 function padZeroes(value, length) {
     const stringValue = String(value);
@@ -35,11 +67,13 @@ const mapTicketForFrontend = (ticket) => {
         location: ticket.location || 'N/A',
         issue_type: ticket.issue_type || 'N/A',
         comments: ticket.comments || '',
-        ticket_id: ticket.ticket_id || 'TKT-??????',
+        ticket_id: ticket.ticket_id || 'TKT-??',
         status: ticket.status || 'Open',
         timestamp: formattedCreatedAt,
-        createdAt: formattedCreatedAt,
-        updatedAt: formattedUpdatedAt,
+        createdAt: formattedCreatedAt, // "Created On"
+        updatedAt: formattedUpdatedAt, // "Last Edited On"
+        created_by_auth_id: ticket.created_by_auth_id, // <-- ADDED: "Created By" ID
+        last_edited_by_auth_id: ticket.last_edited_by_auth_id // "Last Edited By" ID
     };
 };
 // --- End Utility Functions ---
@@ -168,12 +202,20 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         }
 
         // 6. Update the ticket with the formatted 'ticket_id'
+        // DECISION: Does setting the ticket_id count as the first "edit"?
+        // Option A: Yes, set last_edited_by_auth_id here
+        const updatePayload = {
+            ticket_id: formattedTicketId,
+            last_edited_by_auth_id: creatorAuthUserId // Mark this step as the first edit
+       };
+       // Option B: No, only subsequent updates set last_edited_by_auth_id
+       // const updatePayload = {
+       //      ticket_id: formattedTicketId
+       //      // last_edited_by_auth_id remains NULL until a real edit
+       // };
         const { data: updatedTicketData, error: updateError } = await supabase
             .from('tickets')
-            .update({
-                ticket_id: formattedTicketId,
-                last_edited_by_auth_id: creatorAuthUserId
-            })
+            .update(updatePayload) // Use the chosen payload
             .eq('id', newNumericId)
             .select()
             .single();
@@ -187,8 +229,7 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         console.log(`Ticket ${newNumericId} finalized with formatted ID ${formattedTicketId}.`);
 
         // 7. Format the final response
-        const finalTicketResponse = mapTicketForFrontend(updatedTicketData);
-
+        const finalTicketResponse = mapTicketForFrontend(updatedTicketData); // Ensure map includes created_by
         // 8. Send the successful response
         res.status(201).json({
             success: true,

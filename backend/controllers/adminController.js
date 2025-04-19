@@ -5,16 +5,51 @@ import { supabaseAdmin } from '../config/supabaseClient.js';
 import asyncHandler from 'express-async-handler';
 
 // --- Utility Functions ---
+// In both backend/controllers/ticketController.js
+// AND backend/controllers/adminController.js
+
+// --- Utility Functions ---
+
+// Utility function to format timestamps in human-readable local time
 const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return 'N/A'; // Handle null or undefined input
+
     try {
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: true, timeZone: 'UTC' // Example: Use UTC or server's timezone
-        }).format(new Date(timestamp));
-    } catch (e) { return 'Invalid Date'; }
+        // 1. Create a Date object from the timestamp string (handles timezone automatically)
+        const dateObject = new Date(timestamp);
+
+        // 2. Check if the date object is valid after parsing
+        if (isNaN(dateObject.getTime())) {
+             console.error("Error parsing timestamp into valid Date object:", timestamp);
+             return 'Invalid Date';
+        }
+
+        // 3. Define formatting options for Intl.DateTimeFormat
+        const options = {
+            year: 'numeric',    // e.g., 2025
+            month: 'short',     // e.g., Apr
+            day: 'numeric',     // e.g., 19
+            hour: 'numeric',    // e.g., 5 or 17 (use hour12 below for AM/PM)
+            minute: '2-digit',  // e.g., 30
+            second: '2-digit',  // e.g., 15
+            hour12: true,       // Use AM/PM format
+            // timeZoneName: 'short' // Optional: Add timezone like PST, EST, GMT if desired
+        };
+
+        // 4. Format the date using the user's locale and the specified options.
+        //    Using 'en-US' as a base locale often gives desired month/day/year order and AM/PM.
+        //    The actual timezone conversion is based on the user's system settings.
+        return new Intl.DateTimeFormat('en-US', options).format(dateObject);
+
+    } catch (e) {
+        // Catch any unexpected errors during date processing
+        console.error("Error formatting timestamp:", timestamp, e);
+        return 'Invalid Date';
+    }
 };
+
+// --- Keep other utility functions (padZeroes, mapTicketForFrontend) and controller functions ---
+// ... rest of the code in each controller file ...
 
 const mapTicketForFrontend = (ticket) => {
     if (!ticket) return null;
@@ -27,7 +62,7 @@ const mapTicketForFrontend = (ticket) => {
         location: ticket.location || 'N/A',
         issue_type: ticket.issue_type || 'N/A',
         comments: ticket.comments || '',
-        ticket_id: ticket.ticket_id || 'TKT-??????', // Use formatted ID
+        ticket_id: ticket.ticket_id || 'TKT-??', // Use formatted ID
         status: ticket.status || 'Open',
         timestamp: formattedCreatedAt, // Use creation time for 'timestamp' field
         createdAt: formattedCreatedAt,
