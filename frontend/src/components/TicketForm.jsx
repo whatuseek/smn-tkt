@@ -1,277 +1,183 @@
 // frontend/src/components/TicketForm.jsx
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { FaChevronDown } from "react-icons/fa";
-import "../../src/App.css";
-import "../../src/index.css";
-import { motion } from 'framer-motion';
+import axiosInstance from '../api/axiosInstance'; // Use configured instance
 import PropTypes from 'prop-types';
+import {
+    Container, Box, Typography, TextField, Button, FormControl, InputLabel, Select, MenuItem, FormHelperText, Snackbar, Alert, CircularProgress
+} from '@mui/material';
 
-const TicketForm = ({ darkMode }) => {
+// User-friendly display names
+const displayIssueTypes = [
+    "Speed Issue",
+    "Cable Complaint",
+    "Recharge Related",
+    "No Internet",
+    "Others",
+];
+
+// --- Define AND USE issueTypeMap ---
+// Map display values to the specific values expected by the backend (e.g., uppercase)
+const issueTypeMap = displayIssueTypes.reduce((acc, type) => {
+    // Assuming backend expects UPPERCASE. Adjust if different.
+    acc[type] = type.toUpperCase();
+    return acc;
+}, {});
+// --- End issueTypeMap Definition ---
+
+
+// Style object for rounded dropdown/inputs
+const roundedElementStyle = {
+    '& .MuiOutlinedInput-root': { borderRadius: 2 }
+};
+
+
+const TicketForm = ({ setUploadStatus }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [formData, setFormData] = useState({
         user_id: "",
         mobile_number: "",
         location: "",
-        issue_type: "",
+        issue_type: "", // This will now store the DISPLAY value (e.g., "Speed Issue")
         comments: "",
     });
     const [errors, setErrors] = useState({});
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [toast, setToast] = useState({ message: "", type: "" });
-    const displayIssueTypes = [  // Display value here
-        "Speed Issue",
-        "Cable Complaint",
-        "Recharge Related",
-        "No Internet",
-        "Others",
-    ];
-    // Determine the backend URL based on the environment
-    const backendURL = import.meta.env.PROD
-        ? import.meta.env.VITE_BACKEND_URL // Use deployed backend
-        : 'http://localhost:5000'; // Use local backend
+    const [toast, setToast] = useState({ open: false, message: "", type: "info" });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Update time every second
     useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
 
-    // Clear toast notification after 3 seconds
-    useEffect(() => {
-        if (toast.message) {
-            const timeout = setTimeout(() => setToast({ message: "", type: "" }), 3000);
-            return () => clearTimeout(timeout);
-        }
-    }, [toast]);
+    const clearLocalToast = () => { setToast({ open: false, message: "", type: "info" }); };
+    const clearGlobalStatus = () => { if (setUploadStatus) { setUploadStatus(prev => (prev.source === 'ticketForm' ? { message: '', type: '', source: '' } : prev)); } };
 
-    // Handle input changes
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-
-        // Clear error dynamically for each field
-        if (errors[name]) {
-            setErrors({ ...errors, [name]: "" });
-        }
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) { setErrors(prev => ({ ...prev, [name]: "" })); }
     };
 
-    // Handle dropdown selection
-    const handleDropdownSelect = (type) => {
-        setFormData({ ...formData, issue_type: type });
-        setShowDropdown(false);
-
-        // Clear error for issue_type
-        if (errors.issue_type) {
-            setErrors({ ...errors, issue_type: "" });
-        }
+    // Handle MUI Select change for Issue Type
+    const handleDropdownChangeMUI = (event) => {
+        const { name, value } = event.target; // value will be the DISPLAY value ("Speed Issue")
+        setFormData(prev => ({ ...prev, [name]: value })); // Store the DISPLAY value in state
+        if (errors.issue_type) { setErrors(prev => ({ ...prev, issue_type: "" })); }
     };
 
-    // Validate form fields
     const validateForm = () => {
         const newErrors = {};
-
         if (!formData.user_id.trim()) newErrors.user_id = "User ID is required.";
-        // Removed Mobile number validation here
-        //if (!formData.mobile_number.match(/^\d{10}$/))
-        //    newErrors.mobile_number = "Enter a valid 10-digit mobile number.";
-        if (!formData.location.trim()) newErrors.location = "Location is required.";
-        if (!formData.issue_type) newErrors.issue_type = "Please select an issue type.";
-
+        const cleanedMobile = formData.mobile_number.replace(/\D/g, '');
+        if (formData.mobile_number && !/^\d{10}$/.test(cleanedMobile)) { newErrors.mobile_number = "Enter a valid 10-digit mobile number or leave blank."; }
+        if (!formData.location.trim()) newErrors.location = "Address is required.";
+        if (!formData.issue_type) newErrors.issue_type = "Please select an issue type."; // Check if display value is selected
         setErrors(newErrors);
-
-        return Object.keys(newErrors).length === 0; // Returns true if no errors
+        return Object.keys(newErrors).length === 0;
     };
 
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        clearLocalToast(); clearGlobalStatus();
         if (!validateForm()) return;
+        setIsSubmitting(true);
+
+        // --- Prepare data for submission USING the map ---
+        const backendIssueTypeValue = issueTypeMap[formData.issue_type]; // Get "SPEED ISSUE" from "Speed Issue"
+        if (!backendIssueTypeValue) {
+            // This should ideally not happen if validation passes, but handle defensively
+            console.error("Inconsistency: Selected issue type not found in map", formData.issue_type);
+            setToast({ open: true, message: "Invalid issue type selected.", type: "error" });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const userIdValue = formData.user_id; // Get value from state
+        console.log(`Raw user_id from state before submit: "[${userIdValue}]"`); // Log with brackets to see spaces
+        const formDataForSubmit = {
+            ...formData, // includes user_id, location, comments
+            user_id: userIdValue.trim(), // Ensure trim happens here too
+            mobile_number: formData.mobile_number.replace(/\D/g, '') || null,
+            issue_type: backendIssueTypeValue // <-- Send the mapped (e.g., uppercase) value
+        };
+        // --- End data preparation ---
+
+        console.log("Submitting Mapped Ticket Data:", formDataForSubmit);
 
         try {
-            // Ensure the issue_type is uppercase before sending it to the backend
-            const formDataForSubmit = {
-                ...formData,
-                issue_type: formData.issue_type.toUpperCase(),
-            };
-
-            const response = await axios.post(`${backendURL}/api/tickets`,  // Use dynamic backend URL
-                formDataForSubmit);
-
-            if (response.status === 201) {
-                setToast({ message: "Ticket created successfully!", type: "success" });
-                setFormData({
-                    user_id: "",
-                    mobile_number: "",
-                    location: "",
-                    issue_type: "",
-                    comments: "",
-                });
-            } else {
-                throw new Error("Unexpected response from the server.");
-            }
+            const response = await axiosInstance.post(`/api/tickets`, formDataForSubmit);
+            if (response.status === 201 && response.data.success) {
+                const successMsg = response.data.message || "Ticket created successfully!";
+                setToast({ open: true, message: successMsg, type: "success" });
+                setFormData({ user_id: "", mobile_number: "", location: "", issue_type: "", comments: "" }); // Reset form
+                setErrors({});
+                if (setUploadStatus) { setUploadStatus({ message: "Ticket Created!", type: "success", source: "ticketForm" }); setTimeout(clearGlobalStatus, 3000); }
+            } else { throw new Error(response.data?.message || "Ticket creation failed."); }
         } catch (err) {
-            setToast({
-                message: err.response?.data?.message || "Error creating ticket.",
-                type: "error",
-            });
-        }
+            console.error("Error creating ticket:", err);
+            const errorMsg = err.response?.data?.message || err.message || "Error creating ticket.";
+            setToast({ open: true, message: errorMsg, type: "error" });
+            if (setUploadStatus) { setUploadStatus({ message: errorMsg, type: "error", source: "ticketForm" }); setTimeout(clearGlobalStatus, 5000); }
+        } finally { setIsSubmitting(false); }
     };
 
+    const handleCloseToast = (event, reason) => { if (reason === 'clickaway') return; clearLocalToast(); };
+
     return (
-        <div className={`font-raleway max-w-md mx-auto mt-0 p-2 rounded-2xl shadow-lg ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-700"}`}>
+        <Container maxWidth="sm" sx={{ mt: { xs: 1, sm: 2 }, mb: 4 }}>
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: { xs: 2, sm: 3 }, bgcolor: 'background.paper', borderRadius: 3, boxShadow: 3 }} >
+                {/* Title and Timestamp */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, borderBottom: 1, borderColor: 'divider', pb: 1.5 }}>
+                    <Typography variant="h5" component="h2" sx={{ fontFamily: 'Raleway', fontWeight: 'medium' }}>Create New Ticket</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right' }}>
+                        {currentTime.toLocaleDateString("en-US", { month: "short", day: "numeric" })} <br /> {currentTime.toLocaleTimeString("en-US", { hour12: true, hour: "2-digit", minute: "2-digit" })}
+                    </Typography>
+                </Box>
+                {/* User ID and Mobile Number Row */}
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                    <TextField required fullWidth id="user_id" name="user_id" label="User ID" value={formData.user_id} onChange={handleChange} disabled={isSubmitting} error={!!errors.user_id} helperText={errors.user_id || ''} sx={roundedElementStyle} size="small" />
+                    <TextField fullWidth id="mobile_number" name="mobile_number" label="Mobile Number (Optional)" type="tel" value={formData.mobile_number} onChange={handleChange} disabled={isSubmitting} error={!!errors.mobile_number} helperText={errors.mobile_number || ''} inputProps={{ maxLength: 10 }} sx={roundedElementStyle} size="small" />
+                </Box>
+                {/* Address */}
+                <TextField required fullWidth id="location" name="location" label="Address" multiline rows={2} value={formData.location} onChange={handleChange} disabled={isSubmitting} error={!!errors.location} helperText={errors.location || ''} sx={roundedElementStyle} size="small" />
 
-            {/* Timestamp */}
-            <div className="font-raleway font-semibold mb-1 flex text-center justify-between shadow-sm p-1 rounded-md sp">
-                <div className="font-raleway font-light   text-gray-700 text-left">
-                    {currentTime.toLocaleDateString("en-US", {
-                        weekday: "short",
-                        year: "2-digit",
-                        month: "2-digit",
-                        day: "numeric",
-                    })}
-                </div>
-                <div className="font-raleway font-light  text-gray-700 text-right ">
-                    {currentTime.toLocaleTimeString("en-US", {
-                        hour12: true,
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        // second: "2-digit",
-                    })}
-                </div>
-            </div>
+                {/* Issue Type Select - Value is now the DISPLAY value */}
+                <FormControl fullWidth required error={!!errors.issue_type} sx={roundedElementStyle} size="small">
+                    <InputLabel id="issue-type-select-label">Issue Type</InputLabel>
+                    <Select
+                        labelId="issue-type-select-label"
+                        id="issue_type"
+                        name="issue_type"
+                        label="Issue Type *"
+                        value={formData.issue_type} // Bind to the display value in state
+                        onChange={handleDropdownChangeMUI} // Sets the display value in state
+                        disabled={isSubmitting}
+                    >
+                        {/* Iterate through display types for options */}
+                        {displayIssueTypes.map((type) => (
+                            <MenuItem key={type} value={type}> {/* Value is the display value */}
+                                {type} {/* Text is the display value */}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.issue_type && <FormHelperText>{errors.issue_type}</FormHelperText>}
+                </FormControl>
 
-            {/* Toast Notification */}
-            {toast.message && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className={`mb-4 px-4 py-3 rounded ${toast.type === "success"
-                        ? "bg-green-100 border border-green-400 text-green-700"
-                        : "bg-red-100 border border-red-400 text-red-700"
-                        } flex items-center animate-fade-in-out`}
-                >
-                    <span>{toast.message}</span>
-                </motion.div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="">
-
-                {/* Group -- UserID & Mobile */}
-                <div className="flex items-center justify-between space-x-5 ">
-
-                    {/* User ID block */}
-                    <div>
-                        <label className={`text-sm font-bold  ${darkMode ? "text-white" : "text-gray-700"}`}>User ID <span className="text-red-600 font-bold">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="user_id"
-                            placeholder="Enter User ID"
-                            value={formData.user_id}
-                            onChange={handleChange}
-                            className={`shadow appearance-none border rounded w-full py-2 px-3 mt-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
-                        />
-                        {errors.user_id && (
-                            <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
-                        )}
-                    </div>
-                    {/* Mobile number block */}
-                    <div>
-                        <label className={`text-sm font-bold  ${darkMode ? "text-white" : "text-gray-700"}`}>Mobile Number
-                            {/* <span className="text-red-600 font-bold">*</span> */}
-                        </label>
-                        <input
-                            type="text"
-                            name="mobile_number"
-                            placeholder="Enter registered #No."
-                            value={formData.mobile_number}
-                            onChange={handleChange}
-                            className={`shadow appearance-none border rounded w-full py-2 px-3 mt-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
-                            pattern="\d{10}"
-                        />
-                        {errors.mobile_number && (
-                            <p className="text-red-500 text-xs mt-1">{errors.mobile_number}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div>
-                    <label className={`block text-gray-700 text-sm font-bold mb-0 py-2 ${darkMode ? "text-white" : "text-gray-700"}`}>Address <span className="text-red-600 font-bold">*</span></label>
-                    <textarea
-                        name="location"
-                        placeholder="Enter full address"
-                        value={formData.location}
-                        onChange={handleChange}
-                        className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
-                        rows="2"
-                    ></textarea>
-                    {errors.location && (
-                        <p className="text-red-500 text-xs mt-1">{errors.location}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className={`block text-gray-700 text-sm font-bold mb-0 py-2 ${darkMode ? "text-white" : "text-gray-700"}`}>Issue Type <span className="text-red-600 font-bold">*</span></label>
-                    <div className="relative" onClick={() => setShowDropdown(!showDropdown)}>
-                        <div className={`flex items-center shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline cursor-pointer ${darkMode ? "bg-gray-700 text-white" : ""}`}>
-                            {formData.issue_type || "Select Issue Type"}
-                            <FaChevronDown
-                                className={`ml-auto transform transition-transform duration-300 ${showDropdown ? "rotate-180" : "rotate-0"
-                                    }`}
-                            />
-                        </div>
-                        {showDropdown && (
-                            <ul className="absolute z-10 bg-white border rounded shadow-md w-full mt-2">
-                                {displayIssueTypes.map((type) => (
-                                    <li
-                                        key={type}
-                                        onClick={() => handleDropdownSelect(type)}
-                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                    >
-                                        {type}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                    {errors.issue_type && (
-                        <p className="text-red-500 text-xs mt-1">{errors.issue_type}</p>
-                    )}
-                </div>
-
-                <div>
-
-                    <label className={`block text-gray-700 text-sm font-bold mb-1 py-2 ${darkMode ? "text-white" : ""}`}>Description <span className="text-gray-400 font-extralight">(optional)</span></label>
-                    <textarea
-                        name="comments"
-                        placeholder="Enter issue details"
-                        value={formData.comments}
-                        onChange={handleChange}
-                        className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${darkMode ? "bg-gray-700 text-white" : ""}`}
-                        rows="4"
-                    ></textarea>
-                </div>
-
-                <button
-                    type="submit"
-                    className={`w-full  text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-500 hover:bg-blue-700"}`}
-                >
-                    Submit Ticket
-                </button>
-            </form>
-        </div>
+                {/* Comments */}
+                <TextField fullWidth id="comments" name="comments" label="Description (Optional)" multiline rows={3} value={formData.comments} onChange={handleChange} disabled={isSubmitting} sx={roundedElementStyle} size="small" />
+                {/* Submit Button */}
+                <Button type="submit" variant="contained" fullWidth disabled={isSubmitting} sx={{ mt: 1, py: 1.2, borderRadius: 2, textTransform: 'none', fontSize: '1rem' }} >
+                    {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Submit Ticket'}
+                </Button>
+            </Box>
+            {/* Snackbar */}
+            <Snackbar open={toast.open} autoHideDuration={4000} onClose={handleCloseToast} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} >
+                <Alert onClose={handleCloseToast} severity={toast.type} variant="filled" sx={{ width: '100%' }} > {toast.message} </Alert>
+            </Snackbar>
+        </Container>
     );
 };
 
-TicketForm.propTypes = {
-    darkMode: PropTypes.bool
-};
-
+TicketForm.propTypes = { setUploadStatus: PropTypes.func };
 export default TicketForm;

@@ -1,49 +1,45 @@
-// tkt/backend/src/index.js
+// backend/src/index.js
+import express from 'express';
+import dotenv from 'dotenv';
+import setupMiddleware from '../middleware/setupMiddleware.js'; // Basic middleware (CORS, JSON, logging)
+import { notFound, errorHandler } from '../middleware/errorMiddleware.js'; // Error handlers
 
-import express from "express";
-import connectDB from "../config/database.js";
-import setupMiddleware from "../middleware/setupMiddleware.js";
-import ticketRoutes from "../routes/ticketRoutes.js";
-import adminRoutes from "../routes/adminRoutes.js";
-import userUploadRoutes from "../routes/userUploadRoutes.js"
-import { notFound, errorHandler } from '../middleware/errorMiddleware.js';
-// import cors from 'cors';
-// app.use(cors());
+// Import Routes
+import adminRoutes from '../routes/adminRoutes.js';
+import ticketRoutes from '../routes/ticketRoutes.js';
+import userUploadRoutes from '../routes/userUploadRoutes.js';
 
+// Load Environment Variables
+dotenv.config();
+
+// Initialize Express App
 const app = express();
 
-// Get the port from .env file
-const port = process.env.PORT || 5000;
-
-// Connect to MongoDB
-connectDB();
-
-// Setup middleware
+// Setup Core Middleware (CORS, JSON parsing, logging)
 setupMiddleware(app);
 
-// SERVE STATIC FILES - ADJUST THIS PATH CAREFULLY
-// app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+// --- API Routes ---
+// Apply routes (Middleware like 'protect' is applied within the route files)
+app.use('/api/admin', adminRoutes); // Routes for general ticket management now
+app.use('/api/tickets', ticketRoutes); // Routes for ticket creation etc.
+app.use('/api/user', userUploadRoutes); // Routes for adding users to public.users table
 
-// Define routes
-app.use("/api/tickets", ticketRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/user", userUploadRoutes);
-// Add this line for root route
+// --- Basic Welcome Route ---
 app.get('/', (req, res) => {
-    res.send('Hello from Ticket Server!');
+    res.send('API is running...');
 });
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-// app.get('*', (req, res) => {
-//     res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
-//   });
+// --- Error Handling Middleware ---
+// 404 Not Found Handler (if no routes matched)
+app.use(notFound);
+// General Error Handler (catches errors passed via next())
+app.use(errorHandler);
 
+// --- Server ---
+const PORT = process.env.PORT || 5000; // Use port from .env or default to 5000
 
-// Error handling middleware
-app.use(notFound); // Place 'notFound' middleware before 'errorHandler'
-app.use(errorHandler); // Handles errors thrown in controllers
-
-app.listen(port, () => {
-    console.log(`==>=>=>=>=> userServer running on http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`--------------------------------------------------`);
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    console.log(`--------------------------------------------------`);
 });
