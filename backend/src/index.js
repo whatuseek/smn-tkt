@@ -1,6 +1,8 @@
 // backend/src/index.js
+// import dotenv from 'dotenv';
+// Load Environment Variables
+// dotenv.config();
 import express from 'express';
-import dotenv from 'dotenv';
 import setupMiddleware from '../middleware/setupMiddleware.js'; // Basic middleware (CORS, JSON, logging)
 import { notFound, errorHandler } from '../middleware/errorMiddleware.js'; // Error handlers
 
@@ -9,8 +11,7 @@ import adminRoutes from '../routes/adminRoutes.js';
 import ticketRoutes from '../routes/ticketRoutes.js';
 import userUploadRoutes from '../routes/userUploadRoutes.js';
 
-// Load Environment Variables
-dotenv.config();
+
 
 // Initialize Express App
 const app = express();

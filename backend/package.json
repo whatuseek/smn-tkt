@@ -1,10 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node --inspect=9231 --watch src/index.js",
+    "start": "node --inspect=9231 --require dotenv/config --watch src/index.js",
+    "start:prod": "node --require dotenv/config src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -20,6 +21,7 @@
     "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^7.5.0",
+    "json5": "^2.2.3",
     "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",

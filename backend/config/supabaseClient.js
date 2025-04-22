@@ -1,8 +1,8 @@
 // backend/config/supabaseClient.js
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 
-dotenv.config(); // Load .env variables
+// dotenv.config(); // Load .env variables
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY; // Public Anon Key for frontend/standard auth
