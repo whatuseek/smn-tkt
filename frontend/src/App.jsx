@@ -1,16 +1,20 @@
 // frontend/src/App.jsx
 import { useState, useEffect } from 'react';
-// import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+// eslint-disable-next-line no-unused-vars
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from './supabaseClient';
 import PropTypes from 'prop-types';
 // Removed jwt-decode import
-import { Routes, Route, Navigate } from "react-router-dom"; // Keep these
+// import { Routes, Route, Navigate } from "react-router-dom"; // Keep these
 
 
 // Import Pages/Components
 import LandingPage from "./components/LandingPage";
 import Login from "./components/Login"; // Single Login component
 import AdminDashboard from "./components/AdminDashboard";
+import RequestPasswordReset from "./components/RequestPasswordReset"; // <-- Import new component
+import ResetPassword from "./components/ResetPassword"; // <-- IMPORT NEW COMPONENT
+
 // Removed SettingsPage import
 
 // Protected Route Component - Simplified, only checks session existence
@@ -44,24 +48,36 @@ const App = () => {
           if (error) console.error("Error fetching initial session:", error);
           setSession(currentSession); // Set session (null if not logged in)
           setLoadingAuth(false);
-          console.log("Initial session state:", currentSession ? 'Exists' : 'Null');
-      };
+          console.log("Initial session state:", currentSession ? `Exists (User: ${currentSession.user?.id})` : 'Null');
+          setLoadingAuth(false); // Mark auth loading as complete here
+        };
       fetchSession();
 
       // Listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
-              console.log("Auth state change detected:", _event);
-              setSession(session); // Update state on login/logout/token refresh
-              // Removed role decoding logic
-          }
-      );
+        async (_event, session) => { // Make listener async if needed
+            console.log("Auth state change detected:", _event, "Session User:", session?.user?.id);
+
+            // --- SPECIAL HANDLING FOR PASSWORD RECOVERY ---
+            if (_event === "PASSWORD_RECOVERY" && session?.user) {
+                console.log("App.jsx: PASSWORD_RECOVERY detected. Session should be valid for password update.");
+                // We know the user is authenticated via the token.
+                // The /reset-password route should now be able to use this session.
+                // Ensure the session state is updated *before* potential navigation.
+                setSession(session);
+                // We don't navigate here, let the route handle showing ResetPassword component
+            } else {
+                // Handle other events like SIGNED_IN, SIGNED_OUT, INITIAL_SESSION normally
+                setSession(session);
+            }
+        }
+    );
 
       // Cleanup listener
       return () => {
           subscription?.unsubscribe();
       };
-  }, []);
+  }, []);  // Empty dependency array, runs once
 
   if (loadingAuth) {
       return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading Authentication...</div>;
@@ -73,6 +89,14 @@ const App = () => {
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+
+        {/* --- Add Route for Requesting Reset --- */}
+        <Route path="/request-password-reset" element={<RequestPasswordReset />} />
+        {/* --- End Add Route --- */}
+
+        {/* --- Add Route for Reset Password --- */}
+        <Route path="/reset-password" element={<ResetPassword />} />
+        {/* --- End Add Route --- */}
 
         {/* Remove redirects from old login routes */}
         {/* <Route path="/admin-login" element={<Navigate to="/login" replace />} /> */}
