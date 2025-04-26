@@ -2,8 +2,8 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import {
-    getAllTickets, getIssueTypes, deleteTicket, updateTicket, updateTicketStatus
-} from '../controllers/adminController.js';
+    getAllTickets, getIssueTypes, deleteTicket, updateTicket, updateTicketStatus,
+    getTeamUserDetails } from '../controllers/adminController.js';
 import dotenv from 'dotenv';
 import asyncHandler from 'express-async-handler';
 import { protect } from '../middleware/authMiddleware.js'; // Only need protect
@@ -39,4 +39,7 @@ adminRouter.delete('/tickets/:id', validateTicketId, asyncHandler(deleteTicket))
 adminRouter.put('/tickets/:id/status', validateTicketId, asyncHandler(updateTicketStatus));
 adminRouter.put('/tickets/:id', validateTicketId, asyncHandler(updateTicket));
 
+// --- ADD BACK: User Details Route ---
+adminRouter.get('/users/team', asyncHandler(getTeamUserDetails));
+// --- END ADD BACK ---
 export default adminRouter;
