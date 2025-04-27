@@ -24,8 +24,9 @@ const formatTimestamp = (timestamp) => {
 // Utility to map ticket data for frontend responses
 const mapTicketForFrontend = (ticket) => {
     if (!ticket) return null;
-    const formattedCreatedAt = formatTimestamp(ticket.created_at);
-    const formattedUpdatedAt = formatTimestamp(ticket.updated_at);
+    // const formattedCreatedAt = formatTimestamp(ticket.created_at); // REMOVE
+    // const formattedUpdatedAt = formatTimestamp(ticket.updated_at); // REMOVE
+
     return {
         _id: ticket.id,
         user_id: ticket.user_id,
@@ -35,13 +36,15 @@ const mapTicketForFrontend = (ticket) => {
         comments: ticket.comments || '',
         ticket_id: ticket.ticket_id || 'TKT-??',
         status: ticket.status || 'Open',
-        originalCreatedAt: ticket.created_at, // Raw timestamp
-        originalUpdatedAt: ticket.updated_at, // Raw timestamp
-        timestamp: formattedCreatedAt, // alias for createdAt display
-        createdAt: formattedCreatedAt, // "Created On" display
-        updatedAt: formattedUpdatedAt, // "Last Edited On" display
-        created_by_auth_id: ticket.created_by_auth_id, // Creator's Supabase Auth ID
-        last_edited_by_auth_id: ticket.last_edited_by_auth_id // Editor's Supabase Auth ID
+        // Keep the original ISO timestamp strings
+        originalCreatedAt: ticket.created_at,
+        originalUpdatedAt: ticket.updated_at,
+        // Remove the backend-formatted versions to avoid confusion
+        // timestamp: formattedCreatedAt, // REMOVE
+        // createdAt: formattedCreatedAt, // REMOVE
+        // updatedAt: formattedUpdatedAt, // REMOVE
+        created_by_auth_id: ticket.created_by_auth_id,
+        last_edited_by_auth_id: ticket.last_edited_by_auth_id
     };
 };
 // --- End Utility Functions ---

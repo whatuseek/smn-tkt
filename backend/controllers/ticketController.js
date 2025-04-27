@@ -9,8 +9,8 @@ const formatTimestamp = (timestamp) => {
     try {
         const dateObject = new Date(timestamp);
         if (isNaN(dateObject.getTime())) {
-             console.error("TicketCtrl: Error parsing timestamp:", timestamp);
-             return 'Invalid Date';
+            console.error("TicketCtrl: Error parsing timestamp:", timestamp);
+            return 'Invalid Date';
         }
         const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
         return new Intl.DateTimeFormat('en-US', options).format(dateObject);
@@ -27,8 +27,9 @@ function padZeroes(value, length) {
 
 const mapTicketForFrontend = (ticket) => {
     if (!ticket) return null;
-    const formattedCreatedAt = formatTimestamp(ticket.created_at);
-    const formattedUpdatedAt = formatTimestamp(ticket.updated_at);
+    // const formattedCreatedAt = formatTimestamp(ticket.created_at); // REMOVE
+    // const formattedUpdatedAt = formatTimestamp(ticket.updated_at); // REMOVE
+
     return {
         _id: ticket.id,
         user_id: ticket.user_id,
@@ -38,11 +39,15 @@ const mapTicketForFrontend = (ticket) => {
         comments: ticket.comments || '',
         ticket_id: ticket.ticket_id || 'TKT-??',
         status: ticket.status || 'Open',
-        timestamp: formattedCreatedAt,
-        createdAt: formattedCreatedAt, // "Created On"
-        updatedAt: formattedUpdatedAt, // "Last Edited On"
-        created_by_auth_id: ticket.created_by_auth_id, // Creator's Supabase Auth ID
-        last_edited_by_auth_id: ticket.last_edited_by_auth_id // Editor's Supabase Auth ID
+        // Keep the original ISO timestamp strings
+        originalCreatedAt: ticket.created_at,
+        originalUpdatedAt: ticket.updated_at,
+        // Remove the backend-formatted versions to avoid confusion
+        // timestamp: formattedCreatedAt, // REMOVE
+        // createdAt: formattedCreatedAt, // REMOVE
+        // updatedAt: formattedUpdatedAt, // REMOVE
+        created_by_auth_id: ticket.created_by_auth_id,
+        last_edited_by_auth_id: ticket.last_edited_by_auth_id
     };
 };
 // --- End Utility Functions ---
@@ -101,7 +106,7 @@ export const createTicket = asyncHandler(async (req, res, next) => {
     try {
         // 2. Validate user_id exists in the 'users' table?
         //    Keeping this validation SKIPPED as per your last working version.
-        //    If you want to re-enable it, replace the block below with the commented-out section.
+        //    If you want to re-enable it, replace the   below with the commented-out section.
         // --- KEEPING USER VALIDATION SKIPPED ---
         console.log("--- SKIPPING application user_id validation check ---");
         const userValidationPassed = true; // Assuming valid since check is skipped
@@ -130,7 +135,7 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         // --- End Optional User Validation Code --- */
 
         if (!userValidationPassed) {
-           throw new Error("User validation failed or was not performed."); // Should not be reached if skipping
+            throw new Error("User validation failed or was not performed."); // Should not be reached if skipping
         }
 
         // 3. Prepare data for initial insert - INCLUDING created_by_auth_id
@@ -156,7 +161,7 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         if (insertError) {
             console.error("Supabase insert error (initial ticket):", insertError);
             if (insertError.message.includes('violates row-level security policy')) {
-                 res.status(403); throw new Error("Permission denied to create tickets.");
+                res.status(403); throw new Error("Permission denied to create tickets.");
             }
             throw insertError;
         }
@@ -169,10 +174,10 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         // 5. Format the TKT- ID
         const formattedTicketId = `TKT-${padZeroes(newNumericId, 3)}`;
         console.log(`Formatted ticket ID: ${formattedTicketId}`);
-         if (!formattedTicketId || formattedTicketId.includes('undefined') || formattedTicketId === 'TKT-NaN') {
-             console.error(`Critical error: Formatted Ticket ID generation failed! Numeric ID: ${newNumericId}, Result: ${formattedTicketId}`);
-             throw new Error('Failed to generate valid formatted Ticket ID.');
-         }
+        if (!formattedTicketId || formattedTicketId.includes('undefined') || formattedTicketId === 'TKT-NaN') {
+            console.error(`Critical error: Formatted Ticket ID generation failed! Numeric ID: ${newNumericId}, Result: ${formattedTicketId}`);
+            throw new Error('Failed to generate valid formatted Ticket ID.');
+        }
 
         // 6. Update the ticket with the formatted 'ticket_id' (use default client for RLS)
         const updatePayload = {
@@ -187,12 +192,12 @@ export const createTicket = asyncHandler(async (req, res, next) => {
             .single();
 
         if (updateError) {
-             console.error("Supabase update error (setting ticket_id):", updateError);
-             if (updateError.code === '23505') { res.status(409); throw new Error(`Failed to set unique formatted ticket ID (${formattedTicketId}): ${updateError.details || updateError.message}`); }
-             if (updateError.message.includes('violates row-level security policy')) {
-                 res.status(403); throw new Error("Permission denied to update ticket after creation.");
-             }
-             throw updateError;
+            console.error("Supabase update error (setting ticket_id):", updateError);
+            if (updateError.code === '23505') { res.status(409); throw new Error(`Failed to set unique formatted ticket ID (${formattedTicketId}): ${updateError.details || updateError.message}`); }
+            if (updateError.message.includes('violates row-level security policy')) {
+                res.status(403); throw new Error("Permission denied to update ticket after creation.");
+            }
+            throw updateError;
         }
         if (!updatedTicketData) { throw new Error('Failed to retrieve final ticket data after update.'); }
         console.log(`Ticket ${newNumericId} finalized with formatted ID ${formattedTicketId}.`);

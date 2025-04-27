@@ -25,6 +25,37 @@ import {
     FaInfoCircle // Used in notifications
 } from "react-icons/fa";
 
+// **** ADD CLIENT-SIDE FORMATTING FUNCTION ****
+const formatTimestampLocal = (isoString) => {
+    if (!isoString) return 'N/A';
+    try {
+        // Create a Date object from the ISO string (TIMESTAMPTZ from Supabase)
+        const dateObject = new Date(isoString);
+
+        // Check if the date object is valid
+        if (isNaN(dateObject.getTime())) {
+            console.error("Frontend: Error parsing timestamp into valid Date object:", isoString);
+            return 'Invalid Date';
+        }
+
+        // Define formatting options
+        const options = {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: 'numeric', minute: '2-digit', second: '2-digit',
+            hour12: true,
+            // No timeZone needed here - Intl defaults to user's local timezone!
+        };
+
+        // Format using the user's locale and the specified options.
+        return new Intl.DateTimeFormat('en-US', options).format(dateObject);
+
+    } catch (e) {
+        console.error("Frontend: Error formatting timestamp:", isoString, e);
+        return 'Invalid Date';
+    }
+};
+// **** END CLIENT-SIDE FORMATTING FUNCTION ****
+
 // Accept teamUserMap prop
 const TicketList = ({
     onDataChange = () => { },
@@ -164,7 +195,7 @@ const TicketList = ({
             const response = await axiosInstance.put(`/api/admin/tickets/${ticketId}`, finalUpdateData);
             if (response.status === 200 && response.data) {
                 const updatedTicketFromApi = response.data;
-                setTickets(prevTickets => prevTickets.map((ticket) => ticket._id === ticketId ? { ...updatedTicketFromApi } : ticket ));
+                setTickets(prevTickets => prevTickets.map((ticket) => ticket._id === ticketId ? { ...updatedTicketFromApi } : ticket));
                 setEditingTicket(null); setEditedValues({});
                 setNotification({ open: true, message: 'Ticket updated!', severity: 'success' });
                 if (setUploadStatus) setUploadStatus({ message: 'Ticket updated successfully!', type: 'success', source: `ticketSave-${ticketId}` });
@@ -189,16 +220,16 @@ const TicketList = ({
         if (setUploadStatus) setUploadStatus({ message: 'Updating status...', type: 'info', source: `ticketStatus-${ticketId}` });
         try {
             const response = await axiosInstance.put(`/api/admin/tickets/${ticketId}/status`, { status: newStatus });
-             if (response.status === 200 && response.data) {
-                 const updatedTicketFromApi = response.data;
-                 setTickets(prevTickets => prevTickets.map(ticket => ticket._id === ticketId ? { ...updatedTicketFromApi } : ticket ));
-                 setNotification({ open: true, message: `Status changed to ${newStatus}`, severity: 'success' });
-                 if (setUploadStatus) setUploadStatus({ message: `Status updated to ${newStatus}`, type: 'success', source: `ticketStatus-${ticketId}` });
-                 onDataChange();
-             } else { throw new Error('Invalid response from server during status update.'); }
+            if (response.status === 200 && response.data) {
+                const updatedTicketFromApi = response.data;
+                setTickets(prevTickets => prevTickets.map(ticket => ticket._id === ticketId ? { ...updatedTicketFromApi } : ticket));
+                setNotification({ open: true, message: `Status changed to ${newStatus}`, severity: 'success' });
+                if (setUploadStatus) setUploadStatus({ message: `Status updated to ${newStatus}`, type: 'success', source: `ticketStatus-${ticketId}` });
+                onDataChange();
+            } else { throw new Error('Invalid response from server during status update.'); }
         } catch (error) {
             console.error('Error updating status:', error);
-             const errorMsg = error.response?.data?.message || 'Failed to update status.';
+            const errorMsg = error.response?.data?.message || 'Failed to update status.';
             setNotification({ open: true, message: errorMsg, severity: 'error' });
             if (setUploadStatus) setUploadStatus({ message: errorMsg, type: 'error', source: `ticketStatus-${ticketId}` });
             setTickets(originalTickets);
@@ -267,8 +298,8 @@ const TicketList = ({
                         <span>{notification.message}</span>
                         <button onClick={handleCloseNotification} className="ml-auto text-current opacity-70 hover:opacity-100 text-lg font-bold">×</button>
                     </motion.div>
-                 )}
-             </AnimatePresence>
+                )}
+            </AnimatePresence>
 
             {/* Tailwind Confirmation Dialog */}
             <AnimatePresence>
@@ -302,13 +333,13 @@ const TicketList = ({
                                     disabled={isDeleting}
                                     className={`${primaryButtonClasses} w-24 flex justify-center items-center`}
                                 >
-                                    {isDeleting ? <FaSpinner className="animate-spin"/> : 'Delete'}
+                                    {isDeleting ? <FaSpinner className="animate-spin" /> : 'Delete'}
                                 </button>
                             </div>
                         </motion.div>
                     </motion.div>
-                 )}
-             </AnimatePresence>
+                )}
+            </AnimatePresence>
 
             {/* Main Ticket List Area */}
             <div className={`font-raleway ${darkMode ? "text-white" : "text-gray-700"}`}>
@@ -327,133 +358,136 @@ const TicketList = ({
                         <AnimatePresence>
                             {filteredTickets.length > 0 ? (
                                 filteredTickets.map((ticket) => (
-                                <motion.div
-                                    key={ticket._id}
-                                    layout
-                                    variants={cardVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="exit"
-                                    className={`rounded-lg shadow-md p-4 flex flex-col justify-between relative border ${editingTicket === ticket._id ? (darkMode ? 'bg-gray-700/80 border-blue-500/50' : 'bg-blue-50/50 border-blue-300/70') : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200')} transition-colors duration-300 ease-in-out`}
-                                >
-                                    {/* Loading Overlay */}
-                                    <AnimatePresence>
-                                        {(isProcessingCard === ticket._id) && (
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{duration: 0.2}}
-                                                className="absolute inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center rounded-lg z-10 backdrop-blur-sm"
-                                            >
-                                                <FaSpinner className="animate-spin text-white text-2xl"/>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    <motion.div
+                                        key={ticket._id}
+                                        layout
+                                        variants={cardVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="exit"
+                                        className={`rounded-lg shadow-md p-4 flex flex-col justify-between relative border ${editingTicket === ticket._id ? (darkMode ? 'bg-gray-700/80 border-blue-500/50' : 'bg-blue-50/50 border-blue-300/70') : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200')} transition-colors duration-300 ease-in-out`}
+                                    >
+                                        {/* Loading Overlay */}
+                                        <AnimatePresence>
+                                            {(isProcessingCard === ticket._id) && (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="absolute inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center rounded-lg z-10 backdrop-blur-sm"
+                                                >
+                                                    <FaSpinner className="animate-spin text-white text-2xl" />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
 
-                                    {/* Ticket Content */}
-                                    <Box className={(isProcessingCard === ticket._id) ? 'opacity-50 pointer-events-none' : ''} sx={{ mb: 2 }}>
-                                        <h3 className="font-semibold text-lg mb-2 break-words">Ticket ID: {ticket.ticket_id || 'N/A'}</h3>
-                                        <div className="mb-2 space-x-2 flex items-center">
-                                            <strong className="flex-shrink-0 w-20">Issue Type:</strong>
-                                            {editingTicket === ticket._id ? (
-                                                <select
-                                                    value={editedValues.issue_type || ''}
-                                                    onChange={(e) => handleInputChange('issue_type', e.target.value)}
-                                                    className={`flex-grow font-raleway px-2 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
-                                                >
-                                                    {availableIssueTypes.map((type) => (
-                                                        <option className="font-raleway" key={type} value={type}>{type}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <span className={`font-raleway px-2.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
-                                                    {ticket.issue_type || 'N/A'}
-                                                </span>
-                                             )}
-                                        </div>
-                                        <div className="mb-2 space-x-2">
-                                            <strong className="w-20 inline-block">User ID:</strong>
-                                            <span>{ticket.user_id || 'N/A'}</span>
-                                        </div>
-                                        <div className="mb-2 flex items-center space-x-2">
-                                            <strong className="flex-shrink-0 w-20">MobileNo:</strong>
-                                            {editingTicket === ticket._id ? (
-                                                <input
-                                                    type="tel"
-                                                    value={editedValues.mobile_number || ''}
-                                                    onChange={(e) => handleInputChange('mobile_number', e.target.value)}
-                                                    className={`flex-grow font-raleway px-2 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
-                                                    placeholder="10 digits"
-                                                    maxLength={10}
-                                                />
-                                            ) : (
-                                                <span>{ticket.mobile_number || 'N/A'}</span>
-                                            )}
-                                        </div>
-                                        <div className="mb-2">
-                                            <strong className="block mb-0.5">Address:</strong>
-                                            {editingTicket === ticket._id ? (
-                                                <input
-                                                    type="text"
-                                                    value={editedValues.location || ''}
-                                                    onChange={(e) => handleInputChange('location', e.target.value)}
-                                                    className={`font-raleway px-2 py-1 border rounded text-sm w-full mt-1 ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
-                                                    placeholder="Enter full address"
-                                                />
-                                            ) : (
-                                                <div className={`relative text-sm break-words ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                    {(typeof ticket.location === 'string' && ticket.location.trim()) ? (
-                                                        <Fragment>
-                                                            <span>
-                                                                {expandedAddressId === ticket._id || ticket.location.length <= 100 ? ticket.location : `${ticket.location.substring(0, 100)}...`}
-                                                            </span>
-                                                            {ticket.location.length > 100 && (
-                                                                <button
-                                                                    onClick={() => handleViewMoreClick(ticket._id)}
-                                                                    className={`font-raleway text-xs ml-1 ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} focus:outline-none`}
-                                                                >
-                                                                    {expandedAddressId === ticket._id ? '(Less)' : '(More)'}
-                                                                </button>
-                                                            )}
-                                                        </Fragment>
-                                                    ) : ( 'N/A' )}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="mb-2 space-x-2 flex items-center">
-                                            <strong className="flex-shrink-0 w-20">Status:</strong>
-                                            {isUpdatingStatus === ticket._id ? (
-                                                <FaSpinner className="animate-spin ml-1 text-sm"/>
-                                            ) : editingStatusId === ticket._id ? (
-                                                <select
-                                                    value={ticket.status}
-                                                    onChange={(e) => handleStatusChange(ticket._id, e.target.value)}
-                                                    onBlur={() => setEditingStatusId(null)}
-                                                    autoFocus
-                                                    className={`font-raleway px-2 py-1 rounded text-xs font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${darkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-gray-200 border-gray-300'}`}
-                                                >
-                                                    <option value="Open"> Open</option>
-                                                    <option value="In Progress"> In Progress</option>
-                                                    <option value="Resolved"> Resolved</option>
-                                                </select>
-                                            ) : (
-                                                <span
-                                                    className={`font-raleway px-2 py-1 text-xs font-semibold rounded-full inline-flex items-center gap-1 cursor-pointer ${getStatusColor(ticket.status)}`}
-                                                    onClick={() => !editingTicket && setEditingStatusId(ticket._id)}
-                                                    title={editingTicket ? '' : "Click to change status"}
-                                                >
-                                                    {ticket.status === 'Open' && <FaEnvelopeOpenText />}
-                                                    {ticket.status === 'In Progress' && <FaCircleNotch className="animate-spin" />}
-                                                    {ticket.status === 'Resolved' && <FaThumbsUp />}
-                                                    <span className="ml-1">{ticket.status || 'N/A'}</span>
-                                                </span>
-                                            )}
-                                        </div>
+                                        {/* Ticket Content */}
+                                        <Box className={(isProcessingCard === ticket._id) ? 'opacity-50 pointer-events-none' : ''} sx={{ mb: 2 }}>
+                                            <h3 className="font-semibold text-lg mb-2 break-words">Ticket ID: {ticket.ticket_id || 'N/A'}</h3>
+                                            <div className="mb-2 space-x-2 flex items-center">
+                                                <strong className="flex-shrink-0 w-20">Issue Type:</strong>
+                                                {editingTicket === ticket._id ? (
+                                                    <select
+                                                        value={editedValues.issue_type || ''}
+                                                        onChange={(e) => handleInputChange('issue_type', e.target.value)}
+                                                        className={`flex-grow font-raleway px-2 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
+                                                    >
+                                                        {availableIssueTypes.map((type) => (
+                                                            <option className="font-raleway" key={type} value={type}>{type}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <span className={`font-raleway px-2.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
+                                                        {ticket.issue_type || 'N/A'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="mb-2 space-x-2">
+                                                <strong className="w-20 inline-block">User ID:</strong>
+                                                <span>{ticket.user_id || 'N/A'}</span>
+                                            </div>
+                                            <div className="mb-2 flex items-center space-x-2">
+                                                <strong className="flex-shrink-0 w-20">MobileNo:</strong>
+                                                {editingTicket === ticket._id ? (
+                                                    <input
+                                                        type="tel"
+                                                        value={editedValues.mobile_number || ''}
+                                                        onChange={(e) => handleInputChange('mobile_number', e.target.value)}
+                                                        className={`flex-grow font-raleway px-2 py-1 border rounded text-sm w-full ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
+                                                        placeholder="10 digits"
+                                                        maxLength={10}
+                                                    />
+                                                ) : (
+                                                    <span>{ticket.mobile_number || 'N/A'}</span>
+                                                )}
+                                            </div>
+                                            <div className="mb-2">
+                                                <strong className="block mb-0.5">Address:</strong>
+                                                {editingTicket === ticket._id ? (
+                                                    <input
+                                                        type="text"
+                                                        value={editedValues.location || ''}
+                                                        onChange={(e) => handleInputChange('location', e.target.value)}
+                                                        className={`font-raleway px-2 py-1 border rounded text-sm w-full mt-1 ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
+                                                        placeholder="Enter full address"
+                                                    />
+                                                ) : (
+                                                    <div className={`relative text-sm break-words ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {(typeof ticket.location === 'string' && ticket.location.trim()) ? (
+                                                            <Fragment>
+                                                                <span>
+                                                                    {expandedAddressId === ticket._id || ticket.location.length <= 100 ? ticket.location : `${ticket.location.substring(0, 100)}...`}
+                                                                </span>
+                                                                {ticket.location.length > 100 && (
+                                                                    <button
+                                                                        onClick={() => handleViewMoreClick(ticket._id)}
+                                                                        className={`font-raleway text-xs ml-1 ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} focus:outline-none`}
+                                                                    >
+                                                                        {expandedAddressId === ticket._id ? '(Less)' : '(More)'}
+                                                                    </button>
+                                                                )}
+                                                            </Fragment>
+                                                        ) : ('N/A')}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="mb-2 space-x-2 flex items-center">
+                                                <strong className="flex-shrink-0 w-20">Status:</strong>
+                                                {isUpdatingStatus === ticket._id ? (
+                                                    <FaSpinner className="animate-spin ml-1 text-sm" />
+                                                ) : editingStatusId === ticket._id ? (
+                                                    <select
+                                                        value={ticket.status}
+                                                        onChange={(e) => handleStatusChange(ticket._id, e.target.value)}
+                                                        onBlur={() => setEditingStatusId(null)}
+                                                        autoFocus
+                                                        className={`font-raleway px-2 py-1 rounded text-xs font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${darkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-gray-200 border-gray-300'}`}
+                                                    >
+                                                        <option value="Open"> Open</option>
+                                                        <option value="In Progress"> In Progress</option>
+                                                        <option value="Resolved"> Resolved</option>
+                                                    </select>
+                                                ) : (
+                                                    <span
+                                                        className={`font-raleway px-2 py-1 text-xs font-semibold rounded-full inline-flex items-center gap-1 cursor-pointer ${getStatusColor(ticket.status)}`}
+                                                        onClick={() => !editingTicket && setEditingStatusId(ticket._id)}
+                                                        title={editingTicket ? '' : "Click to change status"}
+                                                    >
+                                                        {ticket.status === 'Open' && <FaEnvelopeOpenText />}
+                                                        {ticket.status === 'In Progress' && <FaCircleNotch className="animate-spin" />}
+                                                        {ticket.status === 'Resolved' && <FaThumbsUp />}
+                                                        <span className="ml-1">{ticket.status || 'N/A'}</span>
+                                                    </span>
+                                                )}
+                                            </div>
 
+                                            {/* ==== MODIFIED TIMESTAMP DISPLAY ==== */}
                                         {/* Created Timestamp / By */}
                                         <div className="mb-1 text-sm">
-                                            <strong>Created:</strong> <span>{ticket.createdAt || 'N/A'}</span>
+                                            <strong>Created:</strong>
+                                            {/* Use the new frontend formatter with original timestamp */}
+                                            <span>{formatTimestampLocal(ticket.originalCreatedAt)}</span>
                                         </div>
                                         {ticket.created_by_auth_id && (
                                             <div className="mb-1 text-xs text-gray-500 dark:text-gray-400 truncate" title={`Created by: ${getUserEmail(ticket.created_by_auth_id)}`}>
@@ -463,10 +497,13 @@ const TicketList = ({
                                         )}
 
                                         {/* Edited Timestamp / By */}
-                                        {ticket.updatedAt && ticket.updatedAt !== ticket.createdAt && (
+                                        {/* Only show Edited section if it's different from Created */}
+                                        {ticket.originalUpdatedAt && ticket.originalUpdatedAt !== ticket.originalCreatedAt && (
                                             <Fragment>
                                                 <div className="mt-2 pt-1 border-t border-dashed border-gray-300 dark:border-gray-600 mb-1 text-sm">
-                                                    <strong>Edited:</strong> <span>{ticket.updatedAt || 'N/A'}</span>
+                                                    <strong>Edited:</strong>
+                                                     {/* Use the new frontend formatter with original timestamp */}
+                                                    <span>{formatTimestampLocal(ticket.originalUpdatedAt)}</span>
                                                 </div>
                                                 {ticket.last_edited_by_auth_id && (
                                                     <div className="mb-2 text-xs text-gray-500 dark:text-gray-400 truncate" title={`Edited by: ${getUserEmail(ticket.last_edited_by_auth_id)}`}>
@@ -476,53 +513,54 @@ const TicketList = ({
                                                 )}
                                             </Fragment>
                                         )}
+                                        {/* ==== END MODIFIED TIMESTAMP DISPLAY ==== */}
 
-                                        {/* Comments */}
-                                        <div className="mt-2 mb-4">
-                                            <strong className="block mb-0.5">Comments:</strong>
+                                            {/* Comments */}
+                                            <div className="mt-2 mb-4">
+                                                <strong className="block mb-0.5">Comments:</strong>
+                                                {editingTicket === ticket._id ? (
+                                                    <textarea
+                                                        value={editedValues.comments || ''}
+                                                        onChange={(e) => handleInputChange('comments', e.target.value)}
+                                                        className={`font-raleway px-2 py-1 border rounded text-sm w-full mt-1 ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
+                                                        rows="3"
+                                                        placeholder="Enter comments..."
+                                                    />
+                                                ) : (
+                                                    <p className={`text-sm break-words ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{ticket.comments || 'N/A'}</p>
+                                                )}
+                                            </div>
+                                        </Box>
+
+                                        {/* Action Buttons Area (Using MUI Icons) */}
+                                        <div className={`flex items-center space-x-1 mt-auto pt-2 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                             {editingTicket === ticket._id ? (
-                                                <textarea
-                                                    value={editedValues.comments || ''}
-                                                    onChange={(e) => handleInputChange('comments', e.target.value)}
-                                                    className={`font-raleway px-2 py-1 border rounded text-sm w-full mt-1 ${darkMode ? 'text-white bg-gray-700 border-gray-600 focus:ring-blue-500 focus:border-blue-500' : 'text-gray-900 bg-white border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'}`}
-                                                    rows="3"
-                                                    placeholder="Enter comments..."
-                                                />
+                                                <Fragment> {/* Save/Cancel Buttons */}
+                                                    <MuiIconButton onClick={() => handleSave(ticket._id)} size="small" sx={{ color: darkMode ? 'success.light' : 'success.main', '&:hover': { bgcolor: darkMode ? 'rgba(102, 187, 106, 0.1)' : 'rgba(46, 125, 50, 0.08)' } }} title="Save" aria-label="save" disabled={isSaving === ticket._id}>
+                                                        {isSaving === ticket._id ? <CircularProgress size={20} color="inherit" /> : <SaveIcon fontSize="small" />}
+                                                    </MuiIconButton>
+                                                    <MuiIconButton onClick={handleCancelEdit} size="small" sx={{ color: 'text.secondary', '&:hover': { bgcolor: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)' } }} title="Cancel" aria-label="cancel" disabled={isSaving === ticket._id}>
+                                                        <CancelIcon fontSize="small" />
+                                                    </MuiIconButton>
+                                                </Fragment>
                                             ) : (
-                                                <p className={`text-sm break-words ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{ticket.comments || 'N/A'}</p>
+                                                <Fragment> {/* Edit/Delete Buttons */}
+                                                    <MuiIconButton onClick={() => handleEdit(ticket)} size="small" sx={{ color: darkMode ? 'primary.light' : 'primary.main', '&:hover': { bgcolor: darkMode ? 'rgba(144, 202, 249, 0.1)' : 'rgba(25, 118, 210, 0.08)' } }} title="Edit" aria-label="edit" disabled={!!isProcessingCard || !!editingTicket}>
+                                                        <EditIcon fontSize="small" />
+                                                    </MuiIconButton>
+                                                    <MuiIconButton onClick={() => confirmDelete(ticket._id)} size="small" sx={{ ml: 'auto', color: darkMode ? 'error.light' : 'error.main', '&:hover': { bgcolor: darkMode ? 'rgba(244, 67, 54, 0.1)' : 'rgba(211, 47, 47, 0.08)' } }} title="Delete" aria-label="delete" disabled={!!isProcessingCard || !!editingTicket}>
+                                                        <DeleteIcon fontSize="small" />
+                                                    </MuiIconButton>
+                                                </Fragment>
                                             )}
                                         </div>
-                                    </Box>
-
-                                    {/* Action Buttons Area (Using MUI Icons) */}
-                                    <div className={`flex items-center space-x-1 mt-auto pt-2 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                        {editingTicket === ticket._id ? (
-                                            <Fragment> {/* Save/Cancel Buttons */}
-                                                <MuiIconButton onClick={() => handleSave(ticket._id)} size="small" sx={{ color: darkMode ? 'success.light' : 'success.main', '&:hover': { bgcolor: darkMode ? 'rgba(102, 187, 106, 0.1)' : 'rgba(46, 125, 50, 0.08)'} }} title="Save" aria-label="save" disabled={isSaving === ticket._id}>
-                                                    {isSaving === ticket._id ? <CircularProgress size={20} color="inherit" /> : <SaveIcon fontSize="small" />}
-                                                </MuiIconButton>
-                                                <MuiIconButton onClick={handleCancelEdit} size="small" sx={{ color: 'text.secondary', '&:hover': { bgcolor: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'} }} title="Cancel" aria-label="cancel" disabled={isSaving === ticket._id}>
-                                                    <CancelIcon fontSize="small" />
-                                                </MuiIconButton>
-                                            </Fragment>
-                                        ) : (
-                                            <Fragment> {/* Edit/Delete Buttons */}
-                                                <MuiIconButton onClick={() => handleEdit(ticket)} size="small" sx={{ color: darkMode ? 'primary.light' : 'primary.main', '&:hover': { bgcolor: darkMode ? 'rgba(144, 202, 249, 0.1)' : 'rgba(25, 118, 210, 0.08)'} }} title="Edit" aria-label="edit" disabled={!!isProcessingCard || !!editingTicket}>
-                                                    <EditIcon fontSize="small" />
-                                                </MuiIconButton>
-                                                <MuiIconButton onClick={() => confirmDelete(ticket._id)} size="small" sx={{ ml: 'auto', color: darkMode ? 'error.light' : 'error.main', '&:hover': { bgcolor: darkMode ? 'rgba(244, 67, 54, 0.1)' : 'rgba(211, 47, 47, 0.08)'} }} title="Delete" aria-label="delete" disabled={!!isProcessingCard || !!editingTicket}>
-                                                    <DeleteIcon fontSize="small" />
-                                                </MuiIconButton>
-                                            </Fragment>
-                                        )}
-                                    </div>
-                                </motion.div>
+                                    </motion.div>
                                 ))
                             ) : (
                                 <div className="col-span-full text-center py-10 text-gray-500 dark:text-gray-400">
                                     No tickets found matching your criteria.
                                 </div>
-                             )}
+                            )}
                         </AnimatePresence>
                     </motion.div>
                 )}

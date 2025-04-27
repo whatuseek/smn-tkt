@@ -94,29 +94,29 @@ const AdminDashboard = ({ user }) => {
 
             // Process tickets response (for counts)
             if (ticketsResponse.status === 200) {
-                 setTickets(ticketsResponse?.data || []);
-             } else {
-                 setTickets([]); console.warn("Failed tickets fetch for counts");
-             }
-             setIsLoadingTickets(false); // Tickets (for counts) loading done
+                setTickets(ticketsResponse?.data || []);
+            } else {
+                setTickets([]); console.warn("Failed tickets fetch for counts");
+            }
+            setIsLoadingTickets(false); // Tickets (for counts) loading done
 
             // Process issue types response
             if (typesResponse.status === 200) {
                 setAvailableIssueTypes(typesResponse?.data || []);
             } else {
-                 setAvailableIssueTypes([]); console.warn("Failed types fetch");
-             }
+                setAvailableIssueTypes([]); console.warn("Failed types fetch");
+            }
 
             // Process users response to build the map
             if (usersResponse.status === 200 && usersResponse.data) {
                 const userMap = new Map();
                 (usersResponse.data || []).forEach(u => {
                     if (u.id) {
-                         userMap.set(u.id, {
-                             email: u.email || 'N/A',
-                             // Use the display_name received from the backend
-                             display_name: u.display_name || null
-                         });
+                        userMap.set(u.id, {
+                            email: u.email || 'N/A',
+                            // Use the display_name received from the backend
+                            display_name: u.display_name || null
+                        });
                     } else {
                         console.warn("User found without ID in users/team response:", u)
                     }
@@ -133,10 +133,10 @@ const AdminDashboard = ({ user }) => {
             if (ticketsResponse.status === 200 && typesResponse.status === 200 && usersResponse.status === 200) {
                 setApiStatus('connected');
             } else {
-                 const errorMsg = "Failed to load some dashboard data.";
-                 setApiError(errorMsg);
-                 setApiStatus('error');
-                 console.error(errorMsg, { ticketsStatus: ticketsResponse.status, typesStatus: typesResponse.status, usersStatus: usersResponse.status });
+                const errorMsg = "Failed to load some dashboard data.";
+                setApiError(errorMsg);
+                setApiStatus('error');
+                console.error(errorMsg, { ticketsStatus: ticketsResponse.status, typesStatus: typesResponse.status, usersStatus: usersResponse.status });
             }
         } catch (error) {
             console.error("[AdminDashboard] Error in fetchData:", error);
@@ -184,22 +184,22 @@ const AdminDashboard = ({ user }) => {
     };
 
     const handleFileChange = (event) => {
-         if (event.target.files && event.target.files.length > 0) {
-             const file = event.target.files[0];
-             const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-             const allowedExts = ['.csv', '.xlsx'];
-             const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-             if (!allowedExts.includes(fileExt) || !allowedTypes.includes(file.type)) {
-                 setUploadStatus({ message: "Invalid file type (CSV/XLSX only).", type: "error", source: "userUpload" });
-                 setSelectedFile(null);
-                 setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
-                 event.target.value = ''; // Clear the file input
-                 return;
-             }
-             setSelectedFile(file);
-             setUploadStatus({ message: "", type: "", source: "" }); // Clear any previous status
-         }
-     };
+        if (event.target.files && event.target.files.length > 0) {
+            const file = event.target.files[0];
+            const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            const allowedExts = ['.csv', '.xlsx'];
+            const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (!allowedExts.includes(fileExt) || !allowedTypes.includes(file.type)) {
+                setUploadStatus({ message: "Invalid file type (CSV/XLSX only).", type: "error", source: "userUpload" });
+                setSelectedFile(null);
+                setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+                event.target.value = ''; // Clear the file input
+                return;
+            }
+            setSelectedFile(file);
+            setUploadStatus({ message: "", type: "", source: "" }); // Clear any previous status
+        }
+    };
 
     const handleClearFile = () => {
         setSelectedFile(null);
@@ -209,38 +209,38 @@ const AdminDashboard = ({ user }) => {
 
     const handleUpload = async () => {
         if (!selectedFile) {
-             setUploadStatus({ message: "Please select a file first.", type: "error", source: "userUpload" });
-             setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
-             return;
+            setUploadStatus({ message: "Please select a file first.", type: "error", source: "userUpload" });
+            setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+            return;
         }
         setUploading(true); setUploadProgress(0);
         setUploadStatus({ message: "Uploading...", type: "info", source: "userUpload" });
         const formData = new FormData();
         formData.append("file", selectedFile);
         try {
-             const response = await axiosInstance.post(`/api/user/upload-users`, formData, {
-                 headers: { "Content-Type": "multipart/form-data" },
-                 onUploadProgress: (e) => { if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100)); }
-             });
-             if (response.data.success) {
-                 setUploadStatus({ message: response.data.message || "File uploaded successfully!", type: "success", source: "userUpload" });
-                 handleClearFile(); // Clear file input on success
-                 setUploadProgress(0);
-                 setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
-                 // Optionally re-fetch data if upload affects lists, etc.
-                 // fetchData();
-             } else {
-                 throw new Error(response.data.message || "Upload failed.");
-             }
+            const response = await axiosInstance.post(`/api/user/upload-users`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+                onUploadProgress: (e) => { if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100)); }
+            });
+            if (response.data.success) {
+                setUploadStatus({ message: response.data.message || "File uploaded successfully!", type: "success", source: "userUpload" });
+                handleClearFile(); // Clear file input on success
+                setUploadProgress(0);
+                setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 3000);
+                // Optionally re-fetch data if upload affects lists, etc.
+                // fetchData();
+            } else {
+                throw new Error(response.data.message || "Upload failed.");
+            }
         } catch (error) {
-             console.error("Upload error:", error);
-             setUploadStatus({ message: error.response?.data?.message || error.message || "Upload error occurred.", type: "error", source: "userUpload" });
-             setUploadProgress(0);
-             setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 5000);
+            console.error("Upload error:", error);
+            setUploadStatus({ message: error.response?.data?.message || error.message || "Upload error occurred.", type: "error", source: "userUpload" });
+            setUploadProgress(0);
+            setTimeout(() => setUploadStatus({ message: "", type: "", source: "" }), 5000);
         } finally {
-             setUploading(false);
+            setUploading(false);
         }
-     };
+    };
 
     const handleStatisticCardClick = (status) => {
         navigate("/admin-dashboard/tickets");
@@ -324,48 +324,48 @@ const AdminDashboard = ({ user }) => {
                 {/* MOBILE MENU OVERLAY */}
                 {isMenuOpen && (
                     <Fragment> {/* Use Fragment instead of <> for key prop if needed later */}
-                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden" onClick={closeMenu} aria-hidden="true" />
-                         <div {...(isTouchDevice ? swipeHandlers : {})} className={`fixed top-0 right-0 h-full w-3/4 max-w-xs z-50 sm:hidden transform transition-transform ease-in-out duration-300 ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                             <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }} className={`h-full w-full shadow-xl flex flex-col ${darkMode ? 'bg-gray-800/90 border-l border-gray-700/50 text-gray-200' : 'bg-white/90 border-l border-gray-200/50 text-gray-800'} backdrop-blur-md`}>
-                                 <div className="p-4 flex justify-end">
-                                     <button onClick={closeMenu} className={`p-2 rounded-md ${darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'} focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500`} aria-label="Close menu"><FaTimes className="h-6 w-6" /></button>
-                                 </div>
-                                 {/* Mobile Nav Links */}
-                                 <nav className="flex-grow p-6 space-y-4 overflow-y-auto">
-                                     <Link to="/admin-dashboard" onClick={() => { handleHomeButtonClick(); closeMenu(); }} className={`block px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "dashboardHome" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "dashboardHome" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaHome /> Home </Link>
-                                     <Link to="/admin-dashboard/tickets" onClick={() => { setFilteredStatus(null); closeMenu(); }} className={`block px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "tickets" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "tickets" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaListAlt /> Lists </Link>
-                                     <Link to="/admin-dashboard/addUser" onClick={closeMenu} className={`block px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "upload" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "upload" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaUserPlus /> Add User </Link>
-                                     <Link to="/admin-dashboard/ticketForm" onClick={closeMenu} className={`block px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "ticketForm" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "ticketForm" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaTicketAlt /> Ticket+ </Link>
-                                     {/* Dark Mode Toggle */}
-                                     <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'}`}><span className="flex items-center gap-2 font-medium">{darkMode ? <MdLightMode className="h-5 w-5 text-yellow-400" /> : <MdDarkMode className="h-5 w-5 text-gray-600" />} Mode</span><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div></label></div>
-                                     {/* Logout Button */}
-                                     <button onClick={() => { handleLogout(); closeMenu(); }} className="w-full mt-6 px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"><FaSignOutAlt /> Logout</button>
-                                 </nav>
-                             </motion.div>
-                         </div>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden" onClick={closeMenu} aria-hidden="true" />
+                        <div {...(isTouchDevice ? swipeHandlers : {})} className={`fixed top-0 right-0 h-full w-3/4 max-w-xs z-50 sm:hidden transform transition-transform ease-in-out duration-300 ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }} className={`h-full w-full shadow-xl flex flex-col ${darkMode ? 'bg-gray-800/90 border-l border-gray-700/50 text-gray-200' : 'bg-white/90 border-l border-gray-200/50 text-gray-800'} backdrop-blur-md`}>
+                                <div className="p-4 flex justify-end">
+                                    <button onClick={closeMenu} className={`p-2 rounded-md ${darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'} focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500`} aria-label="Close menu"><FaTimes className="h-6 w-6" /></button>
+                                </div>
+                                {/* Mobile Nav Links */}
+                                <nav className="flex-grow p-6 space-y-4 overflow-y-auto">
+                                    <Link to="/admin-dashboard" onClick={() => { handleHomeButtonClick(); closeMenu(); }} className={`  px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "dashboardHome" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "dashboardHome" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaHome /> Home </Link>
+                                    <Link to="/admin-dashboard/tickets" onClick={() => { setFilteredStatus(null); closeMenu(); }} className={`  px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "tickets" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "tickets" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaListAlt /> Lists </Link>
+                                    <Link to="/admin-dashboard/addUser" onClick={closeMenu} className={`  px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "upload" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "upload" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaUserPlus /> Add User </Link>
+                                    <Link to="/admin-dashboard/ticketForm" onClick={closeMenu} className={`  px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center gap-2 ${darkMode ? (activeTab === "ticketForm" ? "bg-gray-700 text-white" : "hover:bg-gray-700") : (activeTab === "ticketForm" ? "bg-gray-100 text-gray-900" : "hover:bg-gray-100")}`}> <FaTicketAlt /> Ticket+ </Link>
+                                    {/* Dark Mode Toggle */}
+                                    <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'}`}><span className="flex items-center gap-2 font-medium">{darkMode ? <MdLightMode className="h-5 w-5 text-yellow-400" /> : <MdDarkMode className="h-5 w-5 text-gray-600" />} Mode</span><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={darkMode} onChange={toggleDarkMode} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div></label></div>
+                                    {/* Logout Button */}
+                                    <button onClick={() => { handleLogout(); closeMenu(); }} className="w-full mt-6 px-4 py-3 rounded-lg transition font-raleway font-medium flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"><FaSignOutAlt /> Logout</button>
+                                </nav>
+                            </motion.div>
+                        </div>
                     </Fragment>
                 )}
 
                 {/* FIXED FILTER SECTION */}
                 <motion.div className={`sticky top-16 z-20 w-full left-0 px-4 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 flex-nowrap shadow-lg rounded-b-lg ${darkMode ? "bg-gray-800 text-white border-b border-t border-gray-700" : "bg-white border-b border-t border-gray-200"}`}>
                     <input
-                         type="text"
-                         placeholder="Search Tickets (ID, User, Addr, Desc)..."
-                         value={searchQuery}
-                         onChange={(e) => setSearchQuery(e.target.value)}
-                         className={`flex-1 min-w-[120px] sm:min-w-[150px] px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${darkMode ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400" : "bg-white text-gray-900 border-gray-300 placeholder-gray-500"}`}
+                        type="text"
+                        placeholder="Search Tickets (ID, User, Addr, Desc)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={`flex-1 min-w-[120px] sm:min-w-[150px] px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${darkMode ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400" : "bg-white text-gray-900 border-gray-300 placeholder-gray-500"}`}
                     />
                     <select
-                         value={issueType}
-                         onChange={(e) => setIssueType(e.target.value)} // Issue type value is uppercase as needed by backend filter
-                         className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+                        value={issueType}
+                        onChange={(e) => setIssueType(e.target.value)} // Issue type value is uppercase as needed by backend filter
+                        className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
                     >
-                         <option value="">All Issues</option>
-                         {availableIssueTypes.map((type) => (
-                             // Use uppercase value for filtering, display original text
-                             <option key={type} value={type.toUpperCase()}>{type}</option>
-                         ))}
-                     </select>
+                        <option value="">All Issues</option>
+                        {availableIssueTypes.map((type) => (
+                            // Use uppercase value for filtering, display original text
+                            <option key={type} value={type.toUpperCase()}>{type}</option>
+                        ))}
+                    </select>
                     <button
                         onClick={handleResetFilters}
                         className={`flex-shrink-0 px-4 py-2 rounded-lg transition-colors text-sm font-medium mr-2 ${darkMode ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-500 text-white hover:bg-gray-600"}`}
@@ -387,7 +387,7 @@ const AdminDashboard = ({ user }) => {
                         <Alert severity="error" variant="filled" sx={{ mt: 2, mb: 4 }}>
                             <Typography fontWeight="medium">Failed to Load Data</Typography>
                             <Typography variant="body2">{apiError}</Typography>
-                         </Alert>
+                        </Alert>
                     )}
 
                     {/* Render main content only if connected and all loading is finished */}
@@ -446,8 +446,8 @@ const AdminDashboard = ({ user }) => {
                                         {location.pathname.includes("/ticketForm") &&
                                             <TicketForm
                                                 setUploadStatus={setUploadStatus}
-                                                // Optionally pass onDataChange if form success should refresh lists
-                                                // onTicketCreated={handleTicketDataChange}
+                                            // Optionally pass onDataChange if form success should refresh lists
+                                            // onTicketCreated={handleTicketDataChange}
                                             />
                                         }
                                     </Suspense>
