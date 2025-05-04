@@ -9,8 +9,8 @@ const formatTimestamp = (timestamp) => {
     try {
         const dateObject = new Date(timestamp);
         if (isNaN(dateObject.getTime())) {
-            console.error("TicketCtrl: Error parsing timestamp:", timestamp);
-            return 'Invalid Date';
+             console.error("TicketCtrl: Error parsing timestamp:", timestamp);
+             return 'Invalid Date';
         }
         const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
         return new Intl.DateTimeFormat('en-US', options).format(dateObject);
@@ -27,9 +27,8 @@ function padZeroes(value, length) {
 
 const mapTicketForFrontend = (ticket) => {
     if (!ticket) return null;
-    // const formattedCreatedAt = formatTimestamp(ticket.created_at); // REMOVE
-    // const formattedUpdatedAt = formatTimestamp(ticket.updated_at); // REMOVE
-
+    const formattedCreatedAt = formatTimestamp(ticket.created_at);
+    const formattedUpdatedAt = formatTimestamp(ticket.updated_at);
     return {
         _id: ticket.id,
         user_id: ticket.user_id,
@@ -39,15 +38,15 @@ const mapTicketForFrontend = (ticket) => {
         comments: ticket.comments || '',
         ticket_id: ticket.ticket_id || 'TKT-??',
         status: ticket.status || 'Open',
-        // Keep the original ISO timestamp strings
+        // Send original timestamps for client-side formatting
         originalCreatedAt: ticket.created_at,
         originalUpdatedAt: ticket.updated_at,
-        // Remove the backend-formatted versions to avoid confusion
-        // timestamp: formattedCreatedAt, // REMOVE
-        // createdAt: formattedCreatedAt, // REMOVE
-        // updatedAt: formattedUpdatedAt, // REMOVE
-        created_by_auth_id: ticket.created_by_auth_id,
-        last_edited_by_auth_id: ticket.last_edited_by_auth_id
+        // Send pre-formatted as fallback or if needed elsewhere
+        timestamp: formattedCreatedAt,
+        createdAt: formattedCreatedAt,
+        updatedAt: formattedUpdatedAt,
+        created_by_auth_id: ticket.created_by_auth_id, // Creator's Supabase Auth ID
+        last_edited_by_auth_id: ticket.last_edited_by_auth_id // Editor's Supabase Auth ID (will be null initially)
     };
 };
 // --- End Utility Functions ---
@@ -67,13 +66,15 @@ export const getAllTickets = asyncHandler(async (req, res, next) => {
 
         if (error) {
             console.error(`Supabase error fetching tickets for user ${requesterUserId}:`, error);
+            // Let central handler manage specific errors like RLS
             throw error;
         }
+        // Map data for frontend, including original timestamps if needed
         const formattedTickets = tickets.map(mapTicketForFrontend);
         res.status(200).json(formattedTickets);
     } catch (error) {
         console.error('Error in getAllTickets (ticketController):', error);
-        next(error);
+        next(error); // Pass error to the central handler
     }
 });
 
@@ -86,6 +87,7 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         res.status(400); throw new Error('Please provide user_id, location, and issue_type');
     }
     if (!creatorAuthUserId) {
+        // This should theoretically not happen if 'protect' middleware is applied correctly
         console.error("CRITICAL AUTH ERROR in createTicket: req.authUserId is missing.");
         res.status(401); throw new Error('Authentication error: Creator user ID not found in request.');
     }
@@ -101,55 +103,32 @@ export const createTicket = asyncHandler(async (req, res, next) => {
 
     const userIdFromForm = user_id.trim();
 
-    console.log(`Authenticated user ${creatorAuthUserId} attempting to create ticket for application user_id ${userIdFromForm}`);
+    console.log(`Authenticated user ${creatorAuthUserId} creating ticket for application user_id ${userIdFromForm}`);
 
     try {
         // 2. Validate user_id exists in the 'users' table?
-        //    Keeping this validation SKIPPED as per your last working version.
-        //    If you want to re-enable it, replace the   below with the commented-out section.
-        // --- KEEPING USER VALIDATION SKIPPED ---
+        // --- KEEPING USER VALIDATION SKIPPED (as per your requirement) ---
         console.log("--- SKIPPING application user_id validation check ---");
         const userValidationPassed = true; // Assuming valid since check is skipped
         // --- END USER VALIDATION SKIP ---
 
-        /* --- Optional: Re-enable User Validation Code ---
-        console.log("--- RUNNING application user_id validation check ---");
-        const userClient = supabaseAdmin || supabase; // Prefer admin to bypass RLS for check if needed
-        console.log(`Checking existence of user_id: ${userIdFromForm} using ${supabaseAdmin ? 'ADMIN' : 'DEFAULT'} client.`);
-        const { data: userCheckResult, error: userError } = await userClient
-            .from('users') // Check against your public.users table
-            .select('user_id', { count: 'exact', head: true })
-            .eq('user_id', userIdFromForm);
-
-        if (userError) {
-            console.error(`Supabase error checking user ${userIdFromForm}:`, userError);
-            throw new Error('Error verifying user existence.');
-        }
-        const userCount = userCheckResult?.count ?? 0;
-        if (userCount === 0) {
-            res.status(400); // Bad Request
-            throw new Error(`Invalid user ID provided (${userIdFromForm}). User does not exist in application users table.`);
-        }
-        console.log(`User validation successful for: ${userIdFromForm}`);
-        const userValidationPassed = true;
-        // --- End Optional User Validation Code --- */
-
         if (!userValidationPassed) {
-            throw new Error("User validation failed or was not performed."); // Should not be reached if skipping
+           // This block won't be reached if skipping
+           throw new Error("User validation failed or was not performed.");
         }
 
-        // 3. Prepare data for initial insert - INCLUDING created_by_auth_id
+        // 3. Prepare data for initial insert - DO NOT set last_edited_by_auth_id initially
         const initialTicketData = {
             user_id: userIdFromForm,
             location: location.trim(),
             issue_type: String(issue_type).trim().toUpperCase(),
             status: 'Open',
-            created_by_auth_id: creatorAuthUserId, // Save the creator's Supabase Auth ID
-            last_edited_by_auth_id: creatorAuthUserId, // Creator is also the first 'editor'
+            created_by_auth_id: creatorAuthUserId, // SAVE CREATOR ID
+            // last_edited_by_auth_id: creatorAuthUserId, // REMOVED - let it be NULL initially
             ...(cleanedMobile && { mobile_number: cleanedMobile }),
             comments: comments ? comments.trim() : null,
         };
-        console.log("Initial ticket data prepared:", initialTicketData);
+        console.log("Initial ticket data (last_edited_by null initially):", initialTicketData);
 
         // 4. Insert basic ticket data, retrieve generated 'id' (use default client for RLS)
         const { data: insertedData, error: insertError } = await supabase
@@ -161,11 +140,13 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         if (insertError) {
             console.error("Supabase insert error (initial ticket):", insertError);
             if (insertError.message.includes('violates row-level security policy')) {
-                res.status(403); throw new Error("Permission denied to create tickets.");
+                 res.status(403); throw new Error("Permission denied to create tickets.");
             }
+            // Handle other potential constraints or errors
             throw insertError;
         }
         if (!insertedData || typeof insertedData.id !== 'number') {
+            console.error("Insert seemed successful but failed to get ID back.", insertedData);
             throw new Error('Failed to retrieve generated ticket ID after insert.');
         }
         const newNumericId = insertedData.id;
@@ -174,48 +155,59 @@ export const createTicket = asyncHandler(async (req, res, next) => {
         // 5. Format the TKT- ID
         const formattedTicketId = `TKT-${padZeroes(newNumericId, 3)}`;
         console.log(`Formatted ticket ID: ${formattedTicketId}`);
-        if (!formattedTicketId || formattedTicketId.includes('undefined') || formattedTicketId === 'TKT-NaN') {
-            console.error(`Critical error: Formatted Ticket ID generation failed! Numeric ID: ${newNumericId}, Result: ${formattedTicketId}`);
-            throw new Error('Failed to generate valid formatted Ticket ID.');
-        }
+         if (!formattedTicketId || formattedTicketId.includes('undefined') || formattedTicketId === 'TKT-NaN') {
+             console.error(`Critical error: Formatted Ticket ID generation failed! Numeric ID: ${newNumericId}, Result: ${formattedTicketId}`);
+             // Ideally, attempt to clean up the record inserted in step 4 if this fails
+             throw new Error('Failed to generate valid formatted Ticket ID.');
+         }
 
         // 6. Update the ticket with the formatted 'ticket_id' (use default client for RLS)
+        // Do NOT add last_edited_by_auth_id here.
         const updatePayload = {
             ticket_id: formattedTicketId,
-            // No need to update *_by_auth_id fields here again
         };
         const { data: updatedTicketData, error: updateError } = await supabase
             .from('tickets')
             .update(updatePayload)
             .eq('id', newNumericId)
-            .select() // Select full data for the response
+            .select('*') // Select full data including original timestamps for response map
             .single();
 
         if (updateError) {
-            console.error("Supabase update error (setting ticket_id):", updateError);
-            if (updateError.code === '23505') { res.status(409); throw new Error(`Failed to set unique formatted ticket ID (${formattedTicketId}): ${updateError.details || updateError.message}`); }
-            if (updateError.message.includes('violates row-level security policy')) {
-                res.status(403); throw new Error("Permission denied to update ticket after creation.");
-            }
-            throw updateError;
+             console.error("Supabase update error (setting ticket_id):", updateError);
+             if (updateError.code === '23505') { // Unique constraint violation (should be rare)
+                 res.status(409); throw new Error(`Failed to set unique formatted ticket ID (${formattedTicketId}): ${updateError.details || updateError.message}`);
+             }
+             if (updateError.message.includes('violates row-level security policy')) {
+                 res.status(403); throw new Error("Permission denied to update ticket after creation.");
+             }
+             // Consider attempting to delete the original record if this fails
+             throw updateError;
         }
-        if (!updatedTicketData) { throw new Error('Failed to retrieve final ticket data after update.'); }
+        if (!updatedTicketData) {
+            console.error("Update for ticket_id seemed successful but failed to retrieve final data.", { id: newNumericId });
+            throw new Error('Failed to retrieve final ticket data after update.');
+        }
         console.log(`Ticket ${newNumericId} finalized with formatted ID ${formattedTicketId}.`);
 
-        // 7. Format the final response
+        // 7. Format the final response using the data retrieved *after* the update
         const finalTicketResponse = mapTicketForFrontend(updatedTicketData);
 
         // 8. Send the successful response
         res.status(201).json({
             success: true,
             message: "Ticket created successfully.",
-            ticket: finalTicketResponse,
+            ticket: finalTicketResponse, // Send the fully populated ticket object
         });
 
     } catch (error) {
-        console.error("Error caught during ticket creation:", error.message);
-        if (!res.statusCode || res.statusCode < 400) { res.status(500); }
-        next(error);
+        // Catch errors from validation, insert, or update
+        console.error("Error caught during ticket creation process:", error.message);
+        // Ensure status code is appropriate before passing to central handler
+        if (!res.statusCode || res.statusCode < 400) {
+            res.status(500); // Default to Internal Server Error if not set
+        }
+        next(error); // Pass error to the central error handler
     }
 });
 // --- END Controller Functions ---
