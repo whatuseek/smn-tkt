@@ -10,45 +10,44 @@ dotenv.config();
 const setupMiddleware = (app) => {
   // 1. CORS Configuration
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
-    const defaultAllowedOrigins = ['http://localhost:5173']; // Add your frontend origin
+  const defaultAllowedOrigins = ['http://localhost:5173']; // Default fallback
 
-  const allowedOrigins = allowedOriginsEnv 
-      ? allowedOriginsEnv.split(',').map(origin => origin.trim()) 
+  const allowedOrigins = allowedOriginsEnv
+      ? allowedOriginsEnv.split(',').map(origin => origin.trim())
       : defaultAllowedOrigins;
 
-  console.log("Allowed CORS Origins:", allowedOrigins.length > 0 ? allowedOrigins : "ANY (*) - Check CORS settings!");
+  console.log("Allowed CORS Origins:", allowedOrigins.length > 0 ? allowedOrigins : "WARNING: No specific origins defined, check .env ALLOWED_ORIGINS!");
 
-app.use(cors({
+  app.use(cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.warn(`CORS: Blocked origin - ${origin}`);
+        console.warn(`CORS: Blocked origin - ${origin}. Not in allowed list:`, allowedOrigins);
         callback(new Error(`Origin ${origin} Not allowed by CORS`));
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    // **** ADD EXPOSED HEADERS HERE ****
-    exposedHeaders: ['Content-Disposition', 'Content-Type','X-Filename'] // Added X-Filename just to test
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'], // Added Accept
+    exposedHeaders: ['Content-Disposition', 'Content-Type', 'X-Filename']
   }));
 
-app.options('*', cors()); // Enable pre-flight across-the-board
-
-   // Handle OPTIONS requests for CORS preflight
-   app.options('*', cors()); // Enable pre-flight across-the-board
+  // Enable pre-flight requests for all routes
+  // This single line is sufficient after the main cors middleware is configured.
+  app.options('*', cors()); 
 
   // 2. JSON Body Parser
-  app.use(express.json({ limit: '10mb' })); // Enable JSON body parsing
+  app.use(express.json({ limit: '10mb' }));
 
   // 3. URL-Encoded Body Parser
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // 4. HTTP Request Logger (Morgan)
   app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'short'));
-
-  
 };
 
 export default setupMiddleware;
