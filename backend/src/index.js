@@ -10,6 +10,7 @@ import { notFound, errorHandler } from '../middleware/errorMiddleware.js'; // Er
 import adminRoutes from '../routes/adminRoutes.js';
 import ticketRoutes from '../routes/ticketRoutes.js';
 import userUploadRoutes from '../routes/userUploadRoutes.js';
+import reportRoutes from '../routes/reportRoutes.js'; // <-- IMPORT NEW ROUTES
 
 
 
@@ -24,6 +25,7 @@ setupMiddleware(app);
 app.use('/api/admin', adminRoutes); // Routes for general ticket management now
 app.use('/api/tickets', ticketRoutes); // Routes for ticket creation etc.
 app.use('/api/user', userUploadRoutes); // Routes for adding users to public.users table
+app.use('/api/reports', reportRoutes); // <-- MOUNT NEW ROUTES
 
 // --- Basic Welcome Route ---
 app.get('/', (req, res) => {

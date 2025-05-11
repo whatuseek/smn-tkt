@@ -1,10 +1,9 @@
 // frontend/src/api/axiosInstance.js
 import axios from 'axios';
-import { supabase } from '../supabaseClient'; // Adjust path if necessary
+import { supabase } from '../config/supabaseClient'; // Adjust path if needed
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-// Create a new Axios instance
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: { 'Content-Type': 'application/json' }
@@ -13,10 +12,14 @@ const axiosInstance = axios.create({
 // Request Interceptor: Attaches JWT to outgoing requests
 axiosInstance.interceptors.request.use(
     async (config) => {
-        // Define API paths that typically require authentication
-        const requiresAuth = config.url?.startsWith('/api/admin') ||
-                             config.url?.startsWith('/api/tickets') || // Assumes ticket creation needs auth
-                             config.url?.startsWith('/api/user');      // Assumes user upload/create needs auth
+        // --- MODIFIED CHECK ---
+        // Check if the request URL *includes* any of the protected base paths
+        const urlString = config.url || ''; // Ensure url is a string
+        const requiresAuth = urlString.includes('/api/admin') ||
+            urlString.includes('/api/tickets') ||
+            urlString.includes('/api/user') ||
+            urlString.includes('/api/reports');
+        // --- END MODIFIED CHECK ---
 
         // console.log(`[Interceptor] Request URL: ${config.url}, Requires Auth: ${requiresAuth}`);
 
@@ -27,24 +30,24 @@ axiosInstance.interceptors.request.use(
 
                 if (sessionError) {
                     console.error("[Interceptor] Error getting Supabase session:", sessionError.message);
-                    return Promise.reject(sessionError); // Rejecting is safer
+                    // Let request proceed without token if session fails? Backend will reject.
                 }
-                // console.log("[Interceptor] Session retrieved:", session);
 
                 if (session?.access_token) {
                     config.headers['Authorization'] = `Bearer ${session.access_token}`;
                     // console.log(`[Interceptor] Token ATTACHED for ${config.url}`);
                 } else {
-                    console.warn(`[Interceptor] No session token found for protected route: ${config.url}. Request might fail.`);
-                    // Depending on UX, you might reject or redirect here.
-                    // For now, let it proceed and let the backend return 401.
+                    console.warn(`[Interceptor] No session token found for protected route: ${config.url}. Request will likely fail.`);
+                    // No token found, request goes without it, backend should return 401
                 }
             } catch (err) {
                 console.error("[Interceptor] Unexpected error fetching session/token:", err);
-                return Promise.reject(err);
+                return Promise.reject(err); // Reject config promise on unexpected error
             }
+        } else {
+            // console.log(`[Interceptor] URL ${config.url} does not require auth.`);
         }
-        return config;
+        return config; // Return config whether modified or not
     },
     (error) => {
         console.error("[Interceptor] Axios Request Config Error:", error);
@@ -52,43 +55,53 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-// Response Interceptor: Handles responses, e.g., checks for 401 errors
+// Response Interceptor (Keep as before)
 axiosInstance.interceptors.response.use(
     (response) => {
-        return response; // Pass through successful responses
+        return response;
     },
     async (error) => {
         const originalRequest = error.config;
-        // console.error("[Interceptor] Axios Response Error encountered.");
+        console.error("[Interceptor] Axios Response Error encountered.");
         if (error.response) {
-            // console.error(`  Status: ${error.response.status}`);
-            // console.error(`  URL: ${originalRequest.url}`);
-            // console.error(`  Data:`, error.response.data);
+            console.error(`  Status: ${error.response.status}`);
+            console.error(`  URL: ${originalRequest?.url}`);
+            // Avoid logging potentially large blob data for file downloads on error
+            if (!(error.response.data instanceof Blob)) {
+                console.error(`  Data:`, error.response.data);
+            } else {
+                console.error(`  Data: [Blob Received - Type: ${error.response.data.type}]`);
+            }
 
-            // Handle 401 Unauthorized specifically for potential session expiry
-            if (error.response.status === 401 && !originalRequest._retry) {
-                 console.warn("[Interceptor] Received 401 Unauthorized. Session might be expired or invalid.");
-                 originalRequest._retry = true; // Prevent infinite loops
+            if (error.response.status === 401 && !originalRequest?._retry) {
+                console.warn("[Interceptor] Received 401 Unauthorized. Session might be expired or invalid.");
+                if (originalRequest) originalRequest._retry = true;
 
-                 // Check error message from backend
-                 const backendMessage = error.response.data?.message || '';
-                 // Force logout if backend confirms token is invalid/missing
-                 if (backendMessage.includes('invalid token') || backendMessage.includes('token expired') || backendMessage.includes('no token provided')) {
-                    console.log("[Interceptor] Forcing sign out due to token error.");
-                    await supabase.auth.signOut();
-                    // Redirect to login page - Use window.location outside components
-                    if (window.location.pathname !== '/login') { // Avoid redirect loop if already on login
-                         window.location.href = '/login';
+                // Attempt to read backend error message even if it's a blob initially
+                let backendMessage = '';
+                if (error.response.data instanceof Blob && error.response.data.type.includes('json')) {
+                    try {
+                        const errorJson = JSON.parse(await error.response.data.text());
+                        backendMessage = errorJson.message || '';
+                    } catch (parseError) {
+                        console.error("Could not parse 401 error blob as JSON:", parseError);
                     }
-                 }
-                 // If it was another type of 401, maybe just let it reject
+                } else if (error.response.data?.message) {
+                    backendMessage = error.response.data.message;
+                }
+
+                // Force sign out if backend indicates token issue
+                if (backendMessage.includes('invalid token') || backendMessage.includes('token expired') || backendMessage.includes('no token provided')) {
+                    console.log("[Interceptor] Forcing sign out due to specific token error message from backend.");
+                    await supabase.auth.signOut();
+                    if (window.location.pathname !== '/login') { window.location.href = '/login'; }
+                }
             }
         } else if (error.request) {
-            console.error("[Interceptor] Error: No response received from server.", originalRequest.url);
+            console.error("[Interceptor] Error: No response received from server.", originalRequest?.url);
         } else {
             console.error('[Interceptor] Error setting up request:', error.message);
         }
-        // Pass the error along so component-level catch blocks can handle UI
         return Promise.reject(error);
     }
 );

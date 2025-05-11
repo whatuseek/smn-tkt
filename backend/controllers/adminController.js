@@ -63,22 +63,35 @@ export const getIssueTypes = asyncHandler(async (req, res, next) => {
     }
 });
 
+// backend/controllers/adminController.js
+
 export const getAllTickets = asyncHandler(async (req, res, next) => {
-    // Access controlled by RLS policies on 'tickets' table
-    console.log(`User ${req.authUserId} fetching all accessible tickets (via admin controller).`);
+    console.log(`User ${req.authUserId} fetching tickets (admin controller) with query:`, req.query);
     try {
-        const { data: tickets, error } = await supabase // Use default client
-            .from('tickets')
-            .select('*') // RLS will filter rows based on the policy
-            .order('created_at', { ascending: false });
+        let query = supabase.from('tickets').select('*'); // RLS will filter
 
-        if (error) throw error; // Let central handler manage DB errors
+        // Handle sorting (example: ?_sort=created_at&_order=desc)
+        const sortBy = req.query._sort || 'created_at';
+        const sortOrderAsc = (req.query._order || 'desc').toLowerCase() !== 'desc';
+        query = query.order(sortBy, { ascending: sortOrderAsc });
 
-        const formattedTickets = tickets.map(mapTicketForFrontend);
+        // Handle limit (example: ?_limit=5)
+        if (req.query._limit) {
+            const limit = parseInt(req.query._limit, 10);
+            if (!isNaN(limit) && limit > 0) {
+                query = query.limit(limit);
+            }
+        }
+
+        const { data: tickets, error } = await query;
+
+        if (error) throw error;
+
+        const formattedTickets = tickets.map(mapTicketForFrontend); // Assuming you have this utility
         res.status(200).json(formattedTickets);
     } catch (error) {
-        console.error('Error fetching all tickets:', error);
-        next(error); // Pass to central error handler
+        console.error('Error fetching all tickets (admin):', error);
+        next(error);
     }
 });
 
