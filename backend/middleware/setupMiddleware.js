@@ -10,35 +10,50 @@ dotenv.config();
 const setupMiddleware = (app) => {
   // 1. CORS Configuration
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
-  const defaultAllowedOrigins = ['http://localhost:5173']; // Default fallback
+  const defaultAllowedOrigins = ['http://localhost:5173']; // Default fallback if env var is missing
 
   const allowedOrigins = allowedOriginsEnv
       ? allowedOriginsEnv.split(',').map(origin => origin.trim())
       : defaultAllowedOrigins;
 
-  console.log("Allowed CORS Origins:", allowedOrigins.length > 0 ? allowedOrigins : "WARNING: No specific origins defined, check .env ALLOWED_ORIGINS!");
+  // **** ADD DETAILED LOGGING HERE ****
+  console.log("--- CORS CONFIGURATION ---");
+  console.log("process.env.ALLOWED_ORIGINS:", allowedOriginsEnv);
+  console.log("Effective Allowed CORS Origins:", allowedOrigins);
+  console.log("--- END CORS CONFIGURATION ---");
 
-  app.use(cors({
+  const corsOptions = {
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      // Log every origin check
+      console.log(`CORS: Checking origin: ${origin}`);
 
-      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      if (!origin) { // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+        console.log("CORS: No origin provided, allowing.");
+        callback(null, true);
+        return;
+      }
+      if (allowedOrigins.includes(origin)) {
+        console.log(`CORS: Origin '${origin}' IS ALLOWED.`);
         callback(null, true);
       } else {
-        console.warn(`CORS: Blocked origin - ${origin}. Not in allowed list:`, allowedOrigins);
-        callback(new Error(`Origin ${origin} Not allowed by CORS`));
+        console.error(`CORS: Origin '${origin}' IS NOT ALLOWED. Allowed list: [${allowedOrigins.join(', ')}]`);
+        callback(new Error(`Origin ${origin} Not allowed by CORS`)); // This error should be handled by the cors middleware
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'], // Added Accept
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Content-Disposition', 'Content-Type', 'X-Filename']
-  }));
+  };
 
-  // Enable pre-flight requests for all routes
-  // This single line is sufficient after the main cors middleware is configured.
-  app.options('*', cors()); 
+  // Apply the configured CORS middleware. This middleware will also handle preflight OPTIONS requests.
+  app.use(cors(corsOptions));
+
+  // The explicit app.options('*', cors()) might be redundant if the above handles it,
+  // but can serve as a catch-all. Ensure it uses the same options or is broad enough.
+  // For simplicity now, let's rely on the main app.use(cors(corsOptions)) to handle preflights.
+  // If issues persist, we can re-evaluate this line:
+  // app.options('*', cors(corsOptions)); // Or just cors() for a broader default
 
   // 2. JSON Body Parser
   app.use(express.json({ limit: '10mb' }));
